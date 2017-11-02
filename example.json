@@ -1,0 +1,20 @@
+// to be added to course/config.json
+{
+	"_xapi": {
+	    "_isEnabled": true,
+	    "_activityId": "http://example.com/my_unique_identifier",
+	    "_tracking": {
+	        "_shouldRecordInteractions": true
+	    },
+        "_errors": {
+            "_launch": {
+                "title": "ADL launch could not be initialized",
+                "body": "This activity will not be tracked."
+            },
+            "_lrs": {
+                "title": "LRS could not be found",
+                "body": "There was a problem communicating with the LRS. Tracking data may be lost."
+            }
+        }
+	}
+}

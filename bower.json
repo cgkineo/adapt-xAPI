@@ -1,0 +1,22 @@
+{
+  "name": "adapt-xapi",
+  "version": "0.0.1",
+  "framework": ">=2.0.15",
+  "homepage": "https://github.com/cgkineo/adapt-xAPI",
+  "issues": "https://github.com/cgkineo/adapt-xAPI/issues",
+  "displayName" : "xAPI",
+  "extension" : "xapi",
+  "description": "An extension which allows the Experience API (xAPI) to collect data on human performance, stored within a suitable Learning Record Store (LRS).",
+  "main": "/js/adapt-xapi.js",
+  "keywords": [
+    "adapt-plugin",
+    "adapt-extension",
+    "tincan",
+    "tin can",
+    "xapi",
+    "experience api",
+    "tracking"
+  ],
+  "license": "GPLv3",
+  "targetAttribute": "_xapi"
+}

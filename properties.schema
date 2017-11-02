@@ -1,0 +1,132 @@
+{
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "id": "http://jsonschema.net",
+  "required": false,
+  "properties": {
+    "pluginLocations": {
+      "type": "object",
+      "required": true,
+      "properties": {
+        "config": {
+          "type": "object",
+          "properties": {
+            "_xapi": {
+              "type": "object",
+              "required": false,
+              "legend": "xAPI",
+              "properties": {
+                "_isEnabled": {
+                  "type": "boolean",
+                  "required": true,
+                  "default": true,
+                  "title": "Is Enabled",
+                  "inputType": "Checkbox",
+                  "validators": [],
+                  "help": "If enabled, this course will be tracked by xAPI."
+                },
+                "_activityId": {
+                  "type": "string",
+                  "required": true,
+                  "title": "Activity ID",
+                  "default": "http://example.com/my_unique_identifier",
+                  "inputType": "Text",
+                  "validators": [],
+                  "help": "Unique identifier for this xAPI activity."
+                },
+                "_tracking": {
+                  "type": "object",
+                  "required": false,
+                  "title": "Tracking",
+                  "properties": {
+                    "_shouldRecordInteractions": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": true,
+                      "title": "Record responses",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "If enabled, the course will send statements recording the user's responses to questions."
+                    }
+                  }
+                },
+                "_errors": {
+                  "type": "object",
+                  "required": false,
+                  "title": "Error Notifications",
+                  "properties": {
+                    "_launch": {
+                      "type": "object",
+                      "required": false,
+                      "title": "Launch",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "required": true,
+                          "title": "Title",
+                          "default": "ADL launch could not be initialized",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
+                        "body": {
+                          "type": "string",
+                          "required": true,
+                          "title": "Body",
+                          "default": "This activity will not be tracked.",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        }
+                      }
+                    },
+                    "_lrs": {
+                      "type": "object",
+                      "required": false,
+                      "title": "LRS",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "required": true,
+                          "title": "Title",
+                          "default": "LRS could not be found",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
+                        "body": {
+                          "type": "string",
+                          "required": true,
+                          "title": "Body",
+                          "default": "There was a problem communicating with the LRS. Tracking data may be lost if you continue with this session.",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "course": {
+          "type": "object"
+        },
+        "contentobject": {
+          "type": "object"
+        },
+        "article": {
+          "type": "object"
+        },
+        "block": {
+          "type": "object"
+        },
+        "component": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

@@ -4,7 +4,13 @@ define([
     './launchModel',
     './statementModel',
     './stateModel',
-    'libraries/xapiwrapper.min'
+    'libraries/url',
+    'libraries/cryptojs_v3.1.2',
+    'libraries/activitytypes',
+    'libraries/xapi-launch',
+    'libraries/xapistatement',
+    'libraries/xapi-util',
+    'libraries/xapiwrapper'
 ], function(Adapt, ErrorNotificationModel, LaunchModel, StatementModel, StateModel) {
 
     var xAPI = _.extend({

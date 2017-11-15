@@ -46,7 +46,7 @@ define([
             this.listenTo(Adapt, {
                 'resources:showResources': this.onShowResources,
                 'pageView:ready': this.onPageViewReady,
-                'router:menu': this.onRouterMenu,
+                'router:location': this.onRouterLocation,
                 'assessments:complete': this.onAssessmentsComplete,
                 'filterMenuItem:togglePin': this.onFilterMenuItemPinToggled
             });
@@ -159,7 +159,7 @@ define([
         },
 
         send: function(statement) {
-            // don't run asynchrously when terminating as statements may not be executed before browser closes
+            // don't run asynchronously when terminating as statements may not be executed before browser closes
             if (this.get('_terminate')) {
                 this.xAPIWrapper.sendStatement(statement);
             } else {
@@ -212,13 +212,15 @@ define([
             model.set('_sessionStartTime', new Date().getTime());
         },
 
-        // change to location rather than menu to account for navigation within pages?
-        onRouterMenu: function() {
+        onRouterLocation: function() {
             var previousId = Adapt.location._previousId;
 
             if (!previousId) return;
 
             var model = Adapt.findById(previousId);
+
+            // only record experienced statements for pages
+            if (model.get('_type') !== "page") return;
 
             this.sendExperienced(model);
 

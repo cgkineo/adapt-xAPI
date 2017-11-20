@@ -93,12 +93,12 @@ define([
             // causes issue in IE
             /*
             var name = {
-                [this.get('lang')]: model.get('displayTitle') || model.get('title')
+                [this.get('lang')]: model.get('title') || model.get('displayTitle')
             };
             */
 
             var name = {};
-            name[this.get('lang')] = model.get('displayTitle') || model.get('title');
+            name[this.get('lang')] = model.get('title') || model.get('displayTitle');
 
             return name;
         },

@@ -116,7 +116,7 @@ define([
         getContextExtensions: function(model) {
             var extensions = {
                 "https://adaptlearning.org/xapi/extension/framework": "Adapt",
-                "https://adaptlearning.org/xapi/extension/framework_version": "2.0.15"
+                "https://adaptlearning.org/xapi/extension/framework_version": "2.0.19"
             };
 
             return extensions;

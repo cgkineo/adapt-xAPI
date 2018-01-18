@@ -48,7 +48,7 @@ define([
             });
 
             this.listenTo(Adapt, {
-                'resources:showResources': this.onShowResources,
+                'resources:itemClicked': this.onResourceClicked,
                 'pageView:ready': this.onPageViewReady,
                 'router:location': this.onRouterLocation,
                 'assessments:complete': this.onAssessmentsComplete,
@@ -237,19 +237,9 @@ define([
             model.unset('_sessionStartTime', {silent: true});
         },
 
-        onShowResources: function() {
-            this.listenToOnce(Adapt, 'drawer:opened', this.onResourcesOpened);
-        },
-
-        onResourcesOpened: function() {
-            // ideally we would listen to an event sent by resources
-            $('.resources-item-container button').click(_.bind(this.onResourceClicked, this));
-        },
-
-        onResourceClicked: function(event) {
-            var data = $(event.currentTarget).data();
-
+        onResourceClicked: function(data) {
             var model = new Backbone.Model();
+            
             model.set({
                 '_id': (data.type === 'document') ? data.filename : "?" + data.href,
                 'title': data.title,

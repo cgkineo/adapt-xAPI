@@ -40,7 +40,11 @@ define([
 
         setupListeners: function() {
             this.listenTo(Adapt.contentObjects, {
-                'change:_isComplete': this.onIsComplete
+                'change:_isComplete': this.onContentObjectComplete
+            });
+
+            this.listenTo(Adapt.components, {
+                'change:_isComplete': this.onComponentComplete
             });
 
             this.listenTo(Adapt, {
@@ -188,8 +192,14 @@ define([
             this.setupListeners();
         },        
 
-        onIsComplete: function(model) {
-            if (model.get('_isComplete')) {
+        onContentObjectComplete: function(model) {
+            if (model.get('_isComplete') && !model.get('_isOptional')) {
+                this.sendCompleted(model);
+            }
+        },
+
+        onComponentComplete: function(model) {
+            if (model.get('_isComplete') && model.get('_recordCompletion')) {
                 this.sendCompleted(model);
             }
         },

@@ -28,7 +28,7 @@ define([
             return verb;
         },
 
-        getActivityType: function() {
+        getActivityType: function(model) {
             return "http://id.tincanapi.com/activitytype/resource";
         },
 

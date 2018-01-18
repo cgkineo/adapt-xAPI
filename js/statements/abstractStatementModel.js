@@ -28,19 +28,34 @@ define([
             // intentionally empty to be overriden by subclass
         },
 
-        getActivityType: function() {
+        getActivityType: function(model) {
             // intentionally empty to be overriden by subclass
         },
 
         getObject: function(model) {
             var object = new ADL.XAPIStatement.Activity(this.getUniqueIri(model));
 
-            object.definition = {
-                type: this.getActivityType(),
+            var definition = {
+                type: this.getActivityType(model),
                 name: this.getName(model)
             };
 
+            var extensions = this.getObjectExtensions(model);
+
+            if (!(_.isEmpty(extensions))) definition.extensions = extensions;
+
+            object.definition = definition;
+
             return object;
+        },
+
+        getObjectExtensions: function(model) {
+            var extensions = {};
+            var type = model.get('_type');
+
+            if (type) extensions["https://adaptlearning.org/xapi/extension/model"] = type;
+
+            return extensions;
         },
 
         getContext: function(model) {

@@ -37,7 +37,7 @@ define([
             return verb;
         },
 
-        getActivityType: function() {
+        getActivityType: function(model) {
             return "http://adlnet.gov/expapi/activities/cmi.interaction";
         },
 
@@ -48,8 +48,7 @@ define([
                 _.extend(object.definition, {
                     description: this.getDescription(model),
                     interactionType: view.getResponseType(),
-                    correctResponsesPattern: this.getCorrectResponsesPattern(model),
-                    extensions: this.getObjectExtensions(model)
+                    correctResponsesPattern: this.getCorrectResponsesPattern(model)
                 });
             }
 
@@ -75,9 +74,11 @@ define([
         },
 
         getObjectExtensions: function(model) {
-            var extensions = {
+            var extensions = AbstractStatementModel.prototype.getObjectExtensions.apply(this, arguments);
+
+            _.extend(extensions, {
                 "https://adaptlearning.org/xapi/extension/component": model.get('_component')
-            };
+            });
 
             return extensions;
         },

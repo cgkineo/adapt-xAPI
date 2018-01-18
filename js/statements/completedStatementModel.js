@@ -28,8 +28,10 @@ define([
             return verb;
         },
 
-        getActivityType: function() {
-            return ADL.activityTypes.module;
+        getActivityType: function(model) {
+            var isComponent = model.get('_type') === "component";
+
+            return (isComponent) ? ADL.activityTypes.interaction : ADL.activityTypes.module;
         }
 
     });

@@ -48,8 +48,8 @@ define(function() {
             if (offset === 0) return "Z";
 
             var absOffset = Math.abs(offset);
-            var offsetHours = this.padZeros(absOffset / 60);
-            var offsetMinutes = this.padZeros(absOffset % 60);
+            var offsetHours = this.padZeros(Math.floor(absOffset / 60));
+            var offsetMinutes = this.padZeros(Math.floor(absOffset % 60));
             var offsetSign = offset > 0 ? "-" : "+";
 
             return offsetSign + offsetHours + ":" + offsetMinutes;

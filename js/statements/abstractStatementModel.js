@@ -129,9 +129,12 @@ define([
         },
 
         getContextExtensions: function(model) {
+            var buildConfig = Adapt.build;
+            var frameworkVersion = (buildConfig) ? buildConfig.get('package').version : "<3.0.0";
+
             var extensions = {
                 "https://adaptlearning.org/xapi/extension/framework": "Adapt",
-                "https://adaptlearning.org/xapi/extension/framework_version": "2.0.19"
+                "https://adaptlearning.org/xapi/extension/framework_version": frameworkVersion
             };
 
             return extensions;

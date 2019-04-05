@@ -5,12 +5,7 @@ define([
     './statementModel',
     './stateModel',
     'libraries/url',
-    'libraries/cryptojs_v3.1.2',
-    'libraries/activitytypes',
-    'libraries/xapi-launch',
-    'libraries/xapistatement',
-    'libraries/xapi-util',
-    'libraries/xapiwrapper'
+    'libraries/xapiwrapper.min'
 ], function(Adapt, ErrorNotificationModel, LaunchModel, StatementModel, StateModel) {
 
     var xAPI = _.extend({
@@ -34,9 +29,7 @@ define([
         initializeLaunch: function() {
             this.listenToOnce(Adapt, 'xapi:launchInitialized', this.onLaunchInitialized);
 
-            var config = this._config._launch
-
-            this.launchModel = new LaunchModel(config);
+            this.launchModel = new LaunchModel();
         },
 
         initializeStatement: function() {
@@ -50,7 +43,7 @@ define([
                 _shouldRecordInteractions: this._config._tracking._shouldRecordInteractions
             };
 
-            this.statementModel = new StatementModel(config, {wrapper: this.launchModel.getWrapper()});
+            this.statementModel = new StatementModel(config, { wrapper: this.launchModel.getWrapper() });
         },
 
         initializeState: function() {
@@ -61,7 +54,7 @@ define([
                 actor: this.launchModel.get('actor')
             };
 
-            this.stateModel = new StateModel(config, {wrapper: this.launchModel.getWrapper()});
+            this.stateModel = new StateModel(config, { wrapper: this.launchModel.getWrapper() });
         },
 
         onDataReady: function() {

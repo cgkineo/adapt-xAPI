@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<tincan xmlns="http://projecttincan.com/tincan.xsd">
+    <activities>
+        <activity id="@@config._xapi._activityId" type="http://adlnet.gov/expapi/activities/course">
+            <name><![CDATA[@@course.title]]></name>
+            <description lang="en"><![CDATA[@@course.description]]></description>
+            <launch lang="en">index.html</launch>
+        </activity>
+    </activities>
+</tincan>

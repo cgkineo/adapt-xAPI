@@ -36,7 +36,7 @@ define([
             var config = {
                 _statementConfig: {
                     lang: Adapt.config.get('_defaultLanguage'),
-                    activityId: this._config._activityId,
+                    activityId: this.getActivityId(),
                     actor: this.launchModel.get('actor'),
                     contextActivities: this.launchModel.get('contextActivities')
                 },
@@ -50,11 +50,15 @@ define([
             this.listenTo(Adapt, 'xapi:stateReady', this.onStateReady);
 
             var config = {
-                activityId: this._config._activityId,
+                activityId: this.getActivityId(),
                 actor: this.launchModel.get('actor')
             };
 
             this.stateModel = new StateModel(config, { wrapper: this.launchModel.getWrapper() });
+        },
+
+        getActivityId: function() {
+            return this._config._activityId || this.launchModel.getWrapper().lrs.activityId;
         },
 
         onDataReady: function() {

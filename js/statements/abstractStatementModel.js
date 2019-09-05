@@ -9,7 +9,9 @@ define([
             lang: "en",
             activityId: null,
             actor: null,
-            contextActivities: {},
+            contextActivities: {
+                grouping: []
+            },
             registration: null
         },
 
@@ -75,7 +77,7 @@ define([
         },
 
         getContextActivitiesGrouping: function(model) {
-            var grouping = (this.get('contextActivities').grouping) ? this.get('contextActivities').grouping.slice() : [];
+            var grouping = this.get('contextActivities').grouping.slice();
             grouping.push(this.getCourseContextActivity());
 
             var modelType = model.get('_type');

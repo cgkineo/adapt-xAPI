@@ -1,0 +1,84 @@
+<!--[if IE]><![endif]-->
+<!doctype html>
+<!--[if IE 7 ]><html id="adapt" class="ie ie7 no-js" lang="en"><![endif]-->
+<!--[if IE 8 ]><html id="adapt" class="ie ie8 no-js" lang="en"><![endif]-->
+<!--[if IE 9 ]><html id="adapt" class="ie ie9 no-js" lang="en"><![endif]-->
+<!--[if gt IE 9]><!--><html id="adapt" class="no-js" lang="en"><!--<![endif]-->
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+		<script src="libraries/jquery.min.js"></script>
+		<script type="text/javascript">
+			$.ajax({
+				type: "POST",
+				beforeSend: function(request) {
+					request.setRequestHeader("Content-Type", "application/json");
+					request.setRequestHeader("Authorization", getLauncherAuth());
+				},
+				url: getLauncherURL(),
+				data: getData(),
+				processData: false,
+				success: function(msg) {
+					window.location = 'index.html?xAPILaunchService=' + getLauncherEndpoint() + '&xAPILaunchKey=' + encodeURIComponent(msg.key);
+				}
+			});
+
+			function generateSessionID() {
+				return Math.random().toString(36).substr(2, 9);
+			}
+
+			function getLauncherURL() {
+				var url = "https://launcher.learninglocker.net/session/" + generateSessionID() + "/launch";
+
+				return url;
+			}
+
+			function getLauncherAuth() {
+				// "Basic " + toBase64('username:password');
+				var auth = "";
+
+				return auth;
+			}
+
+			function getLauncherEndpoint() {
+				var endpoint = "https://launcher.learninglocker.net/content/";
+
+				return encodeURIComponent(endpoint);
+			}
+
+			function getData() {
+				var data = {
+					statement: {
+						actor: {
+							mbox: "mailto:username@domain.com",
+							name: "Test User"
+						},
+						context: {
+							contextActivities: {
+								grouping: [
+									{
+										objectType: "Activity",
+										id: "http://example.com/course_identifier",
+										definition: {
+											name: {
+												en: "Test Course"
+											}
+										}
+									}
+								]
+							}
+						}
+					},
+					ttl: 10
+				};
+
+				return JSON.stringify(data);
+			}
+		</script>
+	</head>
+
+	<body>
+	</body>
+</html>

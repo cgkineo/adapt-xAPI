@@ -6,7 +6,9 @@ define([
 
         defaults: {
             actor: null,
-            contextActivities: {}
+            contextActivities: {
+                grouping: []
+            }
         },
 
         _xAPIWrapper: null,
@@ -18,7 +20,25 @@ define([
         },
 
         initializeLaunch: function() {
-            ADL.launch(_.bind(this.onLaunchAttempt, this), false);
+            var lrs = ADL.XAPIWrapper.lrs;
+
+            // auth could be sent through in a different process, e.g. OAuth?
+            //if (lrs.endpoint && lrs.auth && lrs.actor) {
+            if (lrs.endpoint && lrs.actor) {
+                this._xAPIWrapper = ADL.XAPIWrapper;
+
+                // capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
+                var launchCredentials = {
+                    'actor': JSON.parse(lrs.actor)/*,
+                    'contextActivities': launchdata.contextActivities*/
+                };
+
+                this.set(launchCredentials);
+
+                this.triggerLaunchInitialized();
+            } else {
+                ADL.launch(_.bind(this.onADLLaunchAttempt, this), false);
+            }
         },
 
         getWrapper: function() {
@@ -31,7 +51,13 @@ define([
             Adapt.trigger('xapi:launchError');
         },
 
-        onLaunchAttempt: function(err, launchdata, wrapper) {
+        triggerLaunchInitialized: function() {
+            _.defer(function() {
+                Adapt.trigger('xapi:launchInitialized')
+            });
+        },
+
+        onADLLaunchAttempt: function(err, launchdata, wrapper) {
             /*
             200 = OK
             400 = launch already initialized
@@ -51,7 +77,7 @@ define([
                 sessionStorage.setItem('lrs', JSON.stringify(wrapper.lrs));
                 sessionStorage.setItem('launchCredentials', JSON.stringify(launchCredentials));
 
-                Adapt.trigger('xapi:launchInitialized');
+                this.triggerLaunchInitialized();
             } else if (performance.navigation.type === 1) {
                 this.onReload();
             } else if (this._retryCount < this._retryLimit) {
@@ -59,9 +85,7 @@ define([
 
                 this.initializeLaunch();
             } else {
-                $('.loading').hide();
-
-                this.showErrorNotification();
+                this.onLaunchFail();
             }
         },
 
@@ -70,12 +94,23 @@ define([
             var lrs = JSON.parse(sessionStorage.getItem('lrs'));
             var launchCredentials = JSON.parse(sessionStorage.getItem('launchCredentials'));
 
+            if (!lrs || !launchCredentials) {
+                this.onLaunchFail();
+                return;
+            }
+
             this._xAPIWrapper = ADL.XAPIWrapper;
             this._xAPIWrapper.changeConfig(lrs);
 
             this.set(launchCredentials);
 
-            Adapt.trigger('xapi:launchInitialized');
+            this.triggerLaunchInitialized();
+        },
+
+        onLaunchFail: function() {
+            $('.loading').hide();
+
+            this.showErrorNotification();
         },
 
         onNotifyClosed: function() {

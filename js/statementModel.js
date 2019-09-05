@@ -51,8 +51,7 @@ define([
                 'resources:itemClicked': this.onResourceClicked,
                 'pageView:ready': this.onPageViewReady,
                 'router:location': this.onRouterLocation,
-                'assessments:complete': this.onAssessmentsComplete,
-                'filterMenuItem:togglePin': this.onFilterMenuItemPinToggled
+                'assessments:complete': this.onAssessmentsComplete
             });
 
             if (this.get('_shouldRecordInteractions')) {
@@ -248,10 +247,6 @@ define([
             });
 
            this.sendResourceExperienced(model);
-        },
-
-        onFilterMenuItemPinToggled: function(model) {
-            (model.get('_isPinned')) ? this.sendFavourite(model) : this.sendUnfavourite(model);
         },
 
         onWindowUnload: function() {

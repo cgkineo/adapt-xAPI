@@ -14,25 +14,15 @@ define([
 
         getVerb: function(model) {
             var isPass = model.get('_isPass');
-            //var verb = (isPass) ? ADL.verbs.passed : ADL.verbs.failed;            
+            //var verb = (isPass) ? ADL.verbs.passed : ADL.verbs.failed;
             var verbType = (isPass) ? "passed" : "failed";
-
-            // causes issue in IE
-            /*
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/" + verbType,
-                display: {
-                    [this.get('lang')]: verbType
-                }
-            };
-            */
 
             var verb = {
                 id: "http://adlnet.gov/expapi/verbs/" + verbType,
                 display: {}
             };
 
-            verb.display[this.get('lang')] = verbType;
+            verb.display[this.get('recipeLang')] = verbType;
 
             return verb;
         },

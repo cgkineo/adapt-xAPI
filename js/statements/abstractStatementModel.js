@@ -6,6 +6,7 @@ define([
     var AbstractStatementModel = Backbone.Model.extend({
 
         defaults: {
+            recipeLang: "en",
             lang: "en",
             activityId: null,
             actor: null,
@@ -63,7 +64,8 @@ define([
         getContext: function(model) {
             var context = {
                 contextActivities: this.getContextActivities(model),
-                extensions: this.getContextExtensions(model)
+                extensions: this.getContextExtensions(model),
+                language: this.get('lang')
             };
 
             return context;
@@ -107,13 +109,6 @@ define([
         },
 
         getName: function(model) {
-            // causes issue in IE
-            /*
-            var name = {
-                [this.get('lang')]: model.get('title') || model.get('displayTitle')
-            };
-            */
-
             var name = {};
             name[this.get('lang')] = model.get('title') || model.get('displayTitle');
 

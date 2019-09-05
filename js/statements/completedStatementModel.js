@@ -8,22 +8,12 @@ define([
         getVerb: function(model) {
             //return ADL.verbs.completed;
 
-            // causes issue in IE
-            /*
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/completed",
-                display: {
-                    [this.get('lang')]: "completed"
-                }
-            };
-            */
-
             var verb = {
                 id: "http://adlnet.gov/expapi/verbs/completed",
                 display: {}
             };
 
-            verb.display[this.get('lang')] = "completed";
+            verb.display[this.get('recipeLang')] = "completed";
 
             return verb;
         },

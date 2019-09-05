@@ -15,22 +15,12 @@ define([
         getVerb: function(model) {
             //return ADL.verbs.experienced;
 
-            // causes issue in IE
-            /*
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/experienced",
-                display: {
-                    [this.get('lang')]: "experienced"
-                }
-            };
-            */
-
             var verb = {
                 id: "http://adlnet.gov/expapi/verbs/experienced",
                 display: {}
             };
 
-            verb.display[this.get('lang')] = "experienced";
+            verb.display[this.get('recipeLang')] = "experienced";
 
             return verb;
         },

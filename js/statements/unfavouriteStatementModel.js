@@ -6,22 +6,12 @@ define([
     var UnfavouriteStatementModel = AbstractStatementModel.extend({
 
         getVerb: function(model) {
-            // causes issue in IE
-            /*
-            var verb = {
-                id: "http://activitystrea.ms/schema/1.0/unfavorite",
-                display: {
-                    [this.get('lang')]: "unfavorite"
-                }
-            };
-            */
-
             var verb = {
                 id: "http://activitystrea.ms/schema/1.0/unfavorite",
                 display: {}
             };
 
-            verb.display[this.get('lang')] = "unfavorite";
+            verb.display[this.get('recipeLang')] = "unfavorite";
 
             return verb;
         },

@@ -17,22 +17,12 @@ define([
         getVerb: function(model) {
             //return ADL.verbs.answered;
 
-            // causes issue in IE
-            /*
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/answered",
-                display: {
-                    [this.get('lang')]: "answered"
-                }
-            };
-            */
-
             var verb = {
                 id: "http://adlnet.gov/expapi/verbs/answered",
                 display: {}
             };
 
-            verb.display[this.get('lang')] = "answered";
+            verb.display[this.get('recipeLang')] = "answered";
 
             return verb;
         },
@@ -56,13 +46,6 @@ define([
         },
 
         getDescription: function(model) {
-            // causes issue in IE
-            /*
-            var description = {
-                [this.get('lang')]: model.get('body')
-            };
-            */
-
             var description = {};
             description[this.get('lang')] = model.get('body');
 

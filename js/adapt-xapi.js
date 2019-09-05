@@ -35,7 +35,7 @@ define([
         initializeStatement: function() {
             var config = {
                 _statementConfig: {
-                    lang: Adapt.config.get('_defaultLanguage'),
+                    lang: Adapt.config.get('_activeLanguage'),
                     activityId: this.getActivityId(),
                     actor: this.launchModel.get('actor'),
                     contextActivities: this.launchModel.get('contextActivities')

@@ -8,22 +8,12 @@ define([
         getVerb: function(model) {
             //return ADL.verbs.initialized;
 
-            // causes issue in IE
-            /*
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/initialized",
-                display: {
-                    [this.get('lang')]: "initialized"
-                }
-            };
-            */
-
             var verb = {
                 id: "http://adlnet.gov/expapi/verbs/initialized",
                 display: {}
             };
 
-            verb.display[this.get('lang')] = "initialized";
+            verb.display[this.get('recipeLang')] = "initialized";
 
             return verb;
         },

@@ -1,6 +1,6 @@
 {
   "name": "adapt-xapi",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "framework": ">=2.0.19",
   "homepage": "https://github.com/cgkineo/adapt-xAPI",
   "issues": "https://github.com/cgkineo/adapt-xAPI/issues",

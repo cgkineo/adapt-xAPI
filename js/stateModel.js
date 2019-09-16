@@ -5,7 +5,7 @@ define([
 ], function(Adapt, OfflineStorage, Async) {
 
     var COMPONENT_KEY = 'components';
-    var LOCATION_KEY = 'location';
+    var QUESTION_KEY = 'questions';
 
     var StateModel = Backbone.Model.extend({
 
@@ -13,47 +13,48 @@ define([
             activityId: null,
             actor: null,
             registration: null,
-            components: []
+            components: [],
+            questions: []
         },
+
+        _shouldStoreResponses: false,
+        _isLoaded: false,
+        _isRestored: false,
 
         initialize: function(attributes, options) {
             this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
 
             this.xAPIWrapper = options.wrapper;
+            this._shouldStoreResponses = options._shouldStoreResponses;
 
-            OfflineStorage.initialize(this);
-            Adapt.offlineStorage.initialize(OfflineStorage);
+            this.setOfflineStorageModel();
 
             this.load();
         },
 
+        setOfflineStorageModel: function() {
+            var attributes = OfflineStorage.model.attributes;
+
+            for (var key in attributes) {
+                this.set(key, attributes[key]);
+                this.save(key);
+            }
+
+            OfflineStorage.model = this;
+        },
+
         setupListeners: function() {
-            this.listenTo(Adapt.components, {
-                'change:_isComplete': this.onIsComplete
-            });
+            Adapt.components.models.forEach(function(model) {
+                if (this._shouldStoreResponses && model.get('_isQuestionType')) {
+                    this.listenTo(model, 'change:_isInteractionComplete', this.onQuestionInteractionComplete);
+                }
+
+                this.listenTo(model, 'change:_isComplete', this.onComponentComplete);
+            }, this);
         },
 
         showErrorNotification: function() {
             Adapt.trigger('xapi:lrsError');
-        },
-
-        setLocation: function(id) {
-            var stateId = LOCATION_KEY;
-           
-            if (id === "" && this.has(stateId)) {
-                this.unset(stateId, {silent: true});
-                this.delete(stateId);
-                return;
-            }
-
-            /*
-            var state = {
-                id: id
-            };
-            */
-
-            this.set(stateId, id);
-            this.save(stateId);
         },
 
         load: function() {
@@ -96,27 +97,30 @@ define([
                     if (err) {
                         scope.showErrorNotification();
                     } else {
-                        //console.log("States loaded");
-                        scope.restore();
+                        scope._isLoaded = true;
+
+                        Adapt.trigger('xapi:stateLoaded');
+
+                        scope.listenToOnce(Adapt, 'app:dataReady', scope.onDataReady);
                     }
                 });
             }
         },
 
         restore: function() {
-            var state = this.get(COMPONENT_KEY);
+            this._restoreComponentDataForStateId(COMPONENT_KEY);
+            this._restoreComponentDataForStateId(QUESTION_KEY);
 
-            if (state.length > 0) {
-                _.each(state, function(data) {
-                    var restoreData = _.omit(data, '_id');
-                    var model = Adapt.components.findWhere({'_id': data._id});
-
-                    // account for models being removed in content without xAPI activityId being changed - should we remove from state?
-                    if (model) model.set(restoreData);
-                });
-            }
+            this._isRestored = true;
 
             Adapt.trigger('xapi:stateReady');
+        },
+
+        set: function(id, value) {
+            Backbone.Model.prototype.set.apply(this, arguments);
+
+            // save everytime the value changes, or only on specific events?
+            if (this._isRestored) this.save(id);
         },
 
         save: function(id) {
@@ -151,31 +155,91 @@ define([
             });
         },
 
-        onAdaptInitialize: function() {
-            this.setupListeners();
-        },        
-
-        onIsComplete: function(model) {
-            var stateId = COMPONENT_KEY;
+        _restoreComponentDataForStateId: function(stateId, data) {
             var state = this.get(stateId);
 
-            var savedModel = _.find(state, function(sm) {
-                return sm._id === model.get('_id');
+            if (state.length > 0) {
+                state.forEach(function(data) {
+                    var restoreData = _.omit(data, '_id');
+                    var model = Adapt.components.findWhere({ '_id': data._id });
+
+                    // account for models being removed in content without xAPI activityId being changed - should we remove from state?
+                    if (model) model.set(restoreData);
+                });
+            }
+        },
+
+        onDataReady: function() {
+            Adapt.trigger('plugin:beginWait');
+
+            this.restore();
+
+            Adapt.trigger('plugin:endWait');
+        }, 
+
+        onAdaptInitialize: function() {
+            this.setupListeners();
+        },
+
+        onQuestionInteractionComplete: function(model) {
+            var stateId = QUESTION_KEY;
+            var state = this.get(stateId);
+            var modelId = model.get('_id');
+            var modelIndex;
+            var isInteractionComplete = model.get('_isInteractionComplete');
+
+            state.forEach(function(sm, index) {
+                if (sm._id === modelId) {
+                    modelIndex = index;
+                    return index;
+                }
             });
 
-            var data = {
-                _id: model.get('_id'),
-                _isComplete: model.get('_isComplete')
-            }
-
-            if (!savedModel) {
-                state.push(data);
+            if (isInteractionComplete) {
+                var data = {
+                    _id: modelId,
+                    _userAnswer: model.get('_userAnswer'),
+                    //_score: model.get('_score'),
+                    _attemptsLeft: model.get('_attemptsLeft'),
+                    _isSubmitted: model.get('_isSubmitted'),
+                    //_isCorrect: model.get('_isCorrect'),
+                    _isInteractionComplete: isInteractionComplete
+                };
+    
+                (modelIndex === undefined) ? state.push(data) : state[modelIndex] = data;
             } else {
-                savedModel = data;
+                state.splice(modelIndex, 1);
             }
 
             this.set(stateId, state);
-            this.save(stateId);
+        },
+
+        onComponentComplete: function(model) {
+            var stateId = COMPONENT_KEY;
+            var state = this.get(stateId);
+            var modelId = model.get('_id');
+            var modelIndex;
+            var isComplete = model.get('_isComplete');
+
+            state.forEach(function(sm, index) {
+                if (sm._id === modelId) {
+                    modelIndex = index;
+                    return index;
+                }
+            });
+
+            if (isComplete) {
+                var data = {
+                    _id: modelId,
+                    _isComplete: isComplete
+                };
+    
+                (modelIndex === undefined) ? state.push(data) : state[modelIndex] = data;
+            } else {
+                state.splice(modelIndex, 1);
+            }
+
+            this.set(stateId, state);
         }
 
     });

@@ -1,12 +1,13 @@
 define([
     'core/js/adapt',
+    './offlineStorage',
     './errorNotificationModel',
     './launchModel',
     './statementModel',
     './stateModel',
     'libraries/url',
     'libraries/xapiwrapper.min'
-], function(Adapt, ErrorNotificationModel, LaunchModel, StatementModel, StateModel) {
+], function(Adapt, OfflineStorage, ErrorNotificationModel, LaunchModel, StatementModel, StateModel) {
 
     var xAPI = _.extend({
 
@@ -17,7 +18,7 @@ define([
         stateModel: null,
 
         initialize: function() {
-            this.listenToOnce(Adapt, 'app:dataReady', this.onDataReady);
+            this.listenToOnce(Adapt, 'app:dataLoaded', this.onDataLoaded);
         },
 
         initializeErrorNotification: function() {
@@ -47,25 +48,31 @@ define([
         },
 
         initializeState: function() {
-            this.listenTo(Adapt, 'xapi:stateReady', this.onStateReady);
+            this.listenTo(Adapt, 'xapi:stateLoaded', this.onStateLoaded);
 
             var config = {
                 activityId: this.getActivityId(),
                 actor: this.launchModel.get('actor')
             };
 
-            this.stateModel = new StateModel(config, { wrapper: this.launchModel.getWrapper() });
+            this.stateModel = new StateModel(config, {
+                wrapper: this.launchModel.getWrapper(),
+                _shouldStoreResponses: this._config._tracking._shouldStoreResponses
+            });
         },
 
         getActivityId: function() {
             return this._config._activityId || this.launchModel.getWrapper().lrs.activityId;
         },
 
-        onDataReady: function() {
+        onDataLoaded: function() {
             this._config = Adapt.config.get('_xapi');
 
             if (this._config && this._config._isEnabled) {
                 Adapt.trigger('plugin:beginWait');
+
+                Adapt.offlineStorage.initialize(OfflineStorage);
+                Adapt.offlineStorage.setReadyStatus();
 
                 this.initializeErrorNotification();
                 this.initializeLaunch();
@@ -77,7 +84,7 @@ define([
             this.initializeState();
         },
 
-        onStateReady: function() {
+        onStateLoaded: function() {
             Adapt.trigger('plugin:endWait');
         }
 

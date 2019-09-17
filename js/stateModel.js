@@ -5,7 +5,6 @@ define([
 ], function(Adapt, OfflineStorage, Async) {
 
     var COMPONENT_KEY = 'components';
-    var QUESTION_KEY = 'questions';
 
     var StateModel = Backbone.Model.extend({
 
@@ -13,8 +12,7 @@ define([
             activityId: null,
             actor: null,
             registration: null,
-            components: [],
-            questions: []
+            components: []
         },
 
         _shouldStoreResponses: false,
@@ -45,11 +43,10 @@ define([
 
         setupListeners: function() {
             Adapt.components.models.forEach(function(model) {
-                if (this._shouldStoreResponses && model.get('_isQuestionType')) {
-                    this.listenTo(model, 'change:_isInteractionComplete', this.onQuestionInteractionComplete);
-                }
-
-                this.listenTo(model, 'change:_isComplete', this.onComponentComplete);
+                this.listenTo(model, {
+                    'change:_isSubmitted': this.onSubmittedChange,
+                    'change:_isInteractionComplete': this.onInteractionCompleteChange
+                });
             }, this);
         },
 
@@ -108,8 +105,7 @@ define([
         },
 
         restore: function() {
-            this._restoreComponentDataForStateId(COMPONENT_KEY);
-            this._restoreComponentDataForStateId(QUESTION_KEY);
+            this._restoreComponentData();
 
             this._isRestored = true;
 
@@ -155,8 +151,8 @@ define([
             });
         },
 
-        _restoreComponentDataForStateId: function(stateId, data) {
-            var state = this.get(stateId);
+        _restoreComponentData: function(data) {
+            var state = this.get(COMPONENT_KEY);
 
             if (state.length > 0) {
                 state.forEach(function(data) {
@@ -167,6 +163,38 @@ define([
                     if (model) model.set(restoreData);
                 });
             }
+        },
+
+        _setComponentData: function(model) {
+            var stateId = COMPONENT_KEY;
+            var state = this.get(stateId);
+            var modelId = model.get('_id');
+            var modelIndex;
+
+            state.forEach(function(sm, index) {
+                if (sm._id === modelId) {
+                    modelIndex = index;
+                    return index;
+                }
+            });
+
+            var data = {
+                _id: modelId,
+                _isInteractionComplete: model.get('_isInteractionComplete'),
+                _isComplete: model.get('_isComplete')
+            };
+
+            if (this._shouldStoreResponses && model.get('_isQuestionType')) {
+                data._userAnswer = model.get('_userAnswer');
+                data._attemptsLeft = model.get('_attemptsLeft');
+                data._isSubmitted = model.get('_isSubmitted');
+                //data._isCorrect = model.get('_isCorrect');
+                //data._score = model.get('_score');
+            }
+
+            (modelIndex === undefined) ? state.push(data) : state[modelIndex] = data;
+
+            this.set(stateId, state);
         },
 
         onDataReady: function() {
@@ -181,65 +209,18 @@ define([
             this.setupListeners();
         },
 
-        onQuestionInteractionComplete: function(model) {
-            var stateId = QUESTION_KEY;
-            var state = this.get(stateId);
-            var modelId = model.get('_id');
-            var modelIndex;
-            var isInteractionComplete = model.get('_isInteractionComplete');
-
-            state.forEach(function(sm, index) {
-                if (sm._id === modelId) {
-                    modelIndex = index;
-                    return index;
-                }
-            });
-
-            if (isInteractionComplete) {
-                var data = {
-                    _id: modelId,
-                    _userAnswer: model.get('_userAnswer'),
-                    //_score: model.get('_score'),
-                    _attemptsLeft: model.get('_attemptsLeft'),
-                    _isSubmitted: model.get('_isSubmitted'),
-                    //_isCorrect: model.get('_isCorrect'),
-                    _isInteractionComplete: isInteractionComplete
-                };
-    
-                (modelIndex === undefined) ? state.push(data) : state[modelIndex] = data;
-            } else {
-                state.splice(modelIndex, 1);
-            }
-
-            this.set(stateId, state);
+        onSubmittedChange: function(model) {
+            // _userAnswer changes after _isSubmitted, so wait before amending state
+            // responses still won't properly be restored until https://github.com/adaptlearning/adapt_framework/issues/2522 is resolved
+            this.listenToOnce(model, 'change:_userAnswer', this.onUserAnswerChange);
         },
 
-        onComponentComplete: function(model) {
-            var stateId = COMPONENT_KEY;
-            var state = this.get(stateId);
-            var modelId = model.get('_id');
-            var modelIndex;
-            var isComplete = model.get('_isComplete');
+        onUserAnswerChange: function(model) {
+            this._setComponentData(model);
+        },
 
-            state.forEach(function(sm, index) {
-                if (sm._id === modelId) {
-                    modelIndex = index;
-                    return index;
-                }
-            });
-
-            if (isComplete) {
-                var data = {
-                    _id: modelId,
-                    _isComplete: isComplete
-                };
-    
-                (modelIndex === undefined) ? state.push(data) : state[modelIndex] = data;
-            } else {
-                state.splice(modelIndex, 1);
-            }
-
-            this.set(stateId, state);
+        onInteractionCompleteChange: function(model) {
+            this._setComponentData(model);
         }
 
     });

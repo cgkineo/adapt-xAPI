@@ -27,6 +27,9 @@ define([
             if (lrs.endpoint && lrs.actor) {
                 this._xAPIWrapper = ADL.XAPIWrapper;
 
+                // add trailing slash if missing in endpoint
+                lrs.endpoint = lrs.endpoint.replace(/\/?$/, "/");
+
                 // capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
                 var launchCredentials = {
                     'actor': JSON.parse(lrs.actor)/*,
@@ -53,7 +56,7 @@ define([
 
         triggerLaunchInitialized: function() {
             _.defer(function() {
-                Adapt.trigger('xapi:launchInitialized')
+                Adapt.trigger('xapi:launchInitialized');
             });
         },
 

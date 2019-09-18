@@ -9,11 +9,11 @@ define([
             recipeLang: "en",
             lang: "en",
             activityId: null,
+            //registration: null,
             actor: null,
             contextActivities: {
                 grouping: []
-            },
-            registration: null
+            }
         },
 
         getData: function(model) {
@@ -67,6 +67,12 @@ define([
                 extensions: this.getContextExtensions(model),
                 language: this.get('lang')
             };
+
+            /**
+             * ADL xAPIWrapper adds registration
+            var registration = this.get('registration');
+            if (registration) context.registration = registration;
+            */
 
             return context;
         },

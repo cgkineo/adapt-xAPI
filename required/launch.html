@@ -11,7 +11,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 		<script src="libraries/jquery.min.js"></script>
 		<script type="text/javascript">
-			window.location = 'index.html?endpoint=' + getLRSEndpoint() + '&actor=' + getActor() + '&auth=' + getAuth();
+			window.location = 'index.html?endpoint=' + getLRSEndpoint() + '&actor=' + getActor() + '&auth=' + getAuth() + '&registration=' + getRegistration();
 
 			function getLRSEndpoint() {
 				var endpoint = "https://saas.learninglocker.net/data/xAPI/";
@@ -33,6 +33,12 @@
 				var auth = "";
 
 				return auth;
+			}
+
+			function getRegistration() {
+				var uuid = "";
+
+				return uuid;
 			}
 		</script>
 	</head>

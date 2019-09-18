@@ -6,6 +6,7 @@ define([
 
         defaults: {
             actor: null,
+            registration: null,
             contextActivities: {
                 grouping: []
             }
@@ -31,12 +32,13 @@ define([
                 lrs.endpoint = lrs.endpoint.replace(/\/?$/, "/");
 
                 // capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
-                var launchCredentials = {
-                    'actor': JSON.parse(lrs.actor)/*,
+                var launchData = {
+                    'actor': JSON.parse(lrs.actor),
+                    'registration': lrs.registration || null,/*,
                     'contextActivities': launchdata.contextActivities*/
                 };
 
-                this.set(launchCredentials);
+                this.set(launchData);
 
                 this.triggerLaunchInitialized();
             } else {
@@ -69,16 +71,18 @@ define([
             if (!err) {
                 this._xAPIWrapper = wrapper;
 
-                var launchCredentials = {
+                // can ADL launch include registration?
+                var launchData = {
                     'actor': launchdata.actor,
+                    'registration': launchdata.registration || null,
                     'contextActivities': launchdata.contextActivities
                 };
 
-                this.set(launchCredentials);
+                this.set(launchData);
 
                 // store launch server details should browser be reloaded and launch server session still initialized
                 sessionStorage.setItem('lrs', JSON.stringify(wrapper.lrs));
-                sessionStorage.setItem('launchCredentials', JSON.stringify(launchCredentials));
+                sessionStorage.setItem('launchData', JSON.stringify(launchData));
 
                 this.triggerLaunchInitialized();
             } else if (performance.navigation.type === 1) {

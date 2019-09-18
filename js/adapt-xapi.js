@@ -38,6 +38,7 @@ define([
                 _statementConfig: {
                     lang: Adapt.config.get('_activeLanguage'),
                     activityId: this.getActivityId(),
+                    //registration: this.launchModel.get('registration'),
                     actor: this.launchModel.get('actor'),
                     contextActivities: this.launchModel.get('contextActivities')
                 },
@@ -52,6 +53,7 @@ define([
 
             var config = {
                 activityId: this.getActivityId(),
+                registration: this.launchModel.get('registration'),
                 actor: this.launchModel.get('actor')
             };
 

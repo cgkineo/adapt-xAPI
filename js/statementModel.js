@@ -203,9 +203,7 @@ define([
             }
         },
 
-        onAssessmentsComplete: function(state) {            
-            var model = Adapt.assessment._getAssessmentByPageId(state.pageId)[0];
-
+        onAssessmentsComplete: function(state, model) {
             // defer as triggered before last question triggers questionView:recordInteraction
             _.defer(_.bind(this.sendAssessmentCompleted, this), model);
         },

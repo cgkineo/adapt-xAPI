@@ -4,7 +4,8 @@
 	    "_isEnabled": true,
 	    "_activityId": "http://example.com/my_unique_identifier",
 	    "_tracking": {
-	        "_shouldRecordInteractions": true
+	        "_shouldRecordInteractions": true,
+            "_shouldStoreResponses": true
 	    },
         "_errors": {
             "_launch": {

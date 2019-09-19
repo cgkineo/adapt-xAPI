@@ -99,9 +99,9 @@ define([
         // if launch session expired, will the next request to the launch server produce an error notification for the user?
         onReload: function() {
             var lrs = JSON.parse(sessionStorage.getItem('lrs'));
-            var launchCredentials = JSON.parse(sessionStorage.getItem('launchCredentials'));
+            var launchData = JSON.parse(sessionStorage.getItem('launchData'));
 
-            if (!lrs || !launchCredentials) {
+            if (!lrs || !launchData) {
                 this.onLaunchFail();
                 return;
             }
@@ -109,7 +109,7 @@ define([
             this._xAPIWrapper = ADL.XAPIWrapper;
             this._xAPIWrapper.changeConfig(lrs);
 
-            this.set(launchCredentials);
+            this.set(launchData);
 
             this.triggerLaunchInitialized();
         },

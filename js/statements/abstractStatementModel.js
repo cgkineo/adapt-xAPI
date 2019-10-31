@@ -20,7 +20,7 @@ define([
             var statement = new ADL.XAPIStatement();
             statement.actor = new ADL.XAPIStatement.Agent(this.get('actor'));
             statement.verb = this.getVerb(model);
-            statement.object = this.getObject.apply(this, arguments);
+            statement.object = this.getObject(model);
             statement.context = this.getContext(model);
             statement.timestamp = Utils.getTimestamp();
 
@@ -98,7 +98,7 @@ define([
         },
 
         getCourseContextActivity: function() {
-            var object = this.getObject(Adapt.course);
+            var object = AbstractStatementModel.prototype.getObject.call(this, Adapt.course);
             object.definition.type = ADL.activityTypes.course;
 
             return object;
@@ -108,7 +108,7 @@ define([
             var modelType = model.get('_type');
             var isContentObject = modelType === "menu" || modelType === "page";
             var contentObject = (isContentObject) ? model : model.findAncestor('contentObjects');
-            var object = this.getObject(contentObject);
+            var object = AbstractStatementModel.prototype.getObject.call(this, contentObject);
             object.definition.type = ADL.activityTypes.module;
 
             return object;

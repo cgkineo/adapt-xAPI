@@ -5,8 +5,8 @@ define([
     var LaunchModel = Backbone.Model.extend({
 
         defaults: {
-            actor: null,
             registration: null,
+            actor: null,
             contextActivities: {
                 grouping: []
             }
@@ -33,8 +33,8 @@ define([
 
                 // capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
                 var launchData = {
-                    'actor': JSON.parse(lrs.actor),
-                    'registration': lrs.registration || null,/*,
+                    'registration': lrs.registration || null,
+                    'actor': JSON.parse(lrs.actor),/*,
                     'contextActivities': launchdata.contextActivities*/
                 };
 
@@ -73,8 +73,8 @@ define([
 
                 // can ADL launch include registration?
                 var launchData = {
-                    'actor': launchdata.actor,
                     'registration': launchdata.registration || null,
+                    'actor': launchdata.actor,
                     'contextActivities': launchdata.contextActivities
                 };
 

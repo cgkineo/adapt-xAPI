@@ -1,11 +1,18 @@
 define([
-    'core/js/adapt',
     './questionStatementModel'
-], function(Adapt, QuestionStatementModel) {
+], function(QuestionStatementModel) {
 
     var DELIMETER = "[:]";
 
     var SliderStatementModel = QuestionStatementModel.extend({
+
+        getInteractionObject: function(model) {
+            var definition = {
+                correctResponsesPattern: this.getCorrectResponsesPattern(model)
+            };
+
+            return definition;
+        },
 
         getCorrectResponsesPattern: function(model) {
             var correctAnswer = model.get('_correctAnswer');
@@ -20,11 +27,6 @@ define([
                     bottom + DELIMETER + top
                 ];
             }
-        },
-
-        getResponse: function(model) {
-            var response = model.get('_userAnswer');              
-            return response.toString();
         }
 
     });

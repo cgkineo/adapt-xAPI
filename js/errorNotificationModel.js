@@ -4,14 +4,11 @@ define([
 
     var ErrorNotificationModel = Backbone.Model.extend({
 
-        defaults: {
-            actor: null,
-            contextActivities: {}
-        },
-
         initialize: function() {
-            this.listenToOnce(Adapt, 'xapi:launchError', this.onShowLaunchError);
-            this.listenToOnce(Adapt, 'xapi:lrsError', this.onShowLRSError);
+            this.listenToOnce(Adapt, {
+                'xapi:launchError': this.onShowLaunchError,
+                'xapi:lrsError': this.onShowLRSError
+            });
         },
 
         showNotification: function(config) {
@@ -21,7 +18,7 @@ define([
                 body: config.body
             };
 
-            console.error(config.title);
+            Adapt.log.error(config.title);
 
             Adapt.trigger('notify:popup', notifyObject);
         },

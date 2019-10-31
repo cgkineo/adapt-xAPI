@@ -1,14 +1,11 @@
 define([
-    'core/js/adapt',
     './abstractStatementModel'
-], function(Adapt, AbstractStatementModel) {
+], function(AbstractStatementModel) {
 
     var QuestionStatementModel = AbstractStatementModel.extend({
 
-        getData: function(view) {
-            var model = view.model;
-
-            var statement = AbstractStatementModel.prototype.getData.call(this, model, view);
+        getData: function(model) {
+            var statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
             statement.result = this.getResult(model);
             
             return statement;
@@ -31,16 +28,16 @@ define([
             return "http://adlnet.gov/expapi/activities/cmi.interaction";
         },
 
-        getObject: function(model, view) {
-            var object = AbstractStatementModel.prototype.getObject.call(this, model);
+        getObject: function(model) {
+            var object = AbstractStatementModel.prototype.getObject.apply(this, arguments);
 
-            if (view) {
-                _.extend(object.definition, {
-                    description: this.getDescription(model),
-                    interactionType: view.getResponseType(),
-                    correctResponsesPattern: this.getCorrectResponsesPattern(model)
-                });
-            }
+            var definition = {
+                description: this.getDescription(model),
+                interactionType: model.getResponseType()
+            };
+
+            _.extend(definition, this.getInteractionObject(model));
+            _.extend(object.definition, definition);
 
             return object;
         },
@@ -52,8 +49,34 @@ define([
             return description;
         },
 
-        getCorrectResponsesPattern: function(model) {
-            // intentionally empty to be overriden by subclass
+        /*
+        getInteractionActivities: function(model) {
+            var activities = {
+                interactionType: model.getResponseType()
+            };
+
+            _.extend(activities, this.getInteractionObject(model));
+
+            return activities;
+        },
+        */
+
+        getInteractionObject: function(model) {
+            var interactionObject = model.getInteractionObject();
+
+            for (key in interactionObject) {
+                var interactionActivity = interactionObject[key];
+
+                interactionActivity.forEach(function(activity) {
+                    if (activity.hasOwnProperty('description')) {
+                        var description = {};
+                        description[this.get('lang')] = activity.description;
+                        activity.description = description;
+                    }
+                }, this);
+            }
+
+            return interactionObject;
         },
 
         getObjectExtensions: function(model) {
@@ -103,7 +126,7 @@ define([
         },
 
         getResponse: function(model) {
-            // intentionally empty to be overriden by subclass
+            return model.getResponse();
         }
 
     });

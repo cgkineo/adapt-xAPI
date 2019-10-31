@@ -16,17 +16,15 @@ define([
 
     var StatementModel = Backbone.Model.extend({
 
-        defaults: {
-            _shouldRecordInteractions: true,
-            _terminate: false
-        },
-
         xAPIWrapper: null,
+        _shouldRecordInteractions: true,
+        _terminate: false,
 
         initialize: function(attributes, options) {
             this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
 
             this.xAPIWrapper = options.wrapper;
+            this._shouldRecordInteractions = options._shouldRecordInteractions;
 
             //this.loadRecipe();
 
@@ -54,7 +52,7 @@ define([
                 'assessments:complete': this.onAssessmentsComplete
             });
 
-            if (this.get('_shouldRecordInteractions')) {
+            if (this._shouldRecordInteractions) {
                 this.listenTo(Adapt, {
                     'questionView:recordInteraction': this.onQuestionInteraction
                 });
@@ -101,9 +99,9 @@ define([
             this.send(statement);
         },
 
-        sendQuestionAnswered: function(view) {
+        sendQuestionAnswered: function(model) {
             var config = this.get('_statementConfig');
-            var questionType = view.model.get('_component');
+            var questionType = model.get('_component');
             var statementClass;
 
             // better solution than this factory type pattern?
@@ -124,7 +122,7 @@ define([
             }
 
             var statementModel = new statementClass(config);
-            var statement = statementModel.getData(view);
+            var statement = statementModel.getData(model);
 
             this.send(statement);
         },
@@ -163,11 +161,11 @@ define([
 
         send: function(statement) {
             // don't run asynchronously when terminating as statements may not be executed before browser closes
-            if (this.get('_terminate')) {
+            if (this._terminate) {
                 this.xAPIWrapper.sendStatement(statement);
             } else {
                 this.xAPIWrapper.sendStatement(statement, function(request, obj) {
-                    console.log("[" + obj.id + "]: " + request.status + " - " + request.statusText);
+                    Adapt.log.debug("[" + obj.id + "]: " + request.status + " - " + request.statusText);
 
                     switch (request.status) {
                         case 200:
@@ -209,7 +207,7 @@ define([
         },
 
         onQuestionInteraction: function(view) {
-            this.sendQuestionAnswered(view);
+            this.sendQuestionAnswered(view.model);
         },
 
         // add into core?
@@ -231,7 +229,7 @@ define([
 
             this.sendExperienced(model);
 
-            model.unset('_sessionStartTime', {silent: true});
+            model.unset('_sessionStartTime', { silent: true });
         },
 
         onResourceClicked: function(data) {
@@ -250,8 +248,8 @@ define([
         onWindowUnload: function() {
             $(window).off('beforeunload unload', this._onWindowUnload);
 
-            if (!this.get('_terminate')) {
-                this.set('_terminate', true);
+            if (!this._terminate) {
+                this._terminate = true;
 
                 var model = Adapt.findById(Adapt.location._currentId);
 

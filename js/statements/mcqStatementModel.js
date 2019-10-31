@@ -1,27 +1,36 @@
 define([
-    'core/js/adapt',
     './questionStatementModel'
-], function(Adapt, QuestionStatementModel) {
+], function(QuestionStatementModel) {
 
     var DELIMETER = "[,]";
 
     var McqStatementModel = QuestionStatementModel.extend({
 
-        getCorrectResponsesPattern: function(model) {
-            var correctItems = _.filter(model.get('_items'), function(item) {
-                return item._shouldBeSelected;
-            });
+        /*
+        getInteractionObject: function(model) {
+            var interactionObject = model.getInteractionObject();
+            
+            var definition = {
+                choices: this.getChoices(interactionObject.choices),
+                correctResponsesPattern: interactionObject.correctResponsesPattern
+            };
 
-            var pattern = _.pluck(correctItems, 'text');
-
-            return [
-                pattern.join(DELIMETER)
-            ];
+            return definition;
         },
 
+        getChoices: function(choices) {
+            choices.forEach(function(choice) {
+                var description = {};
+                description[this.get('lang')] = choice.description;
+                choice.description = description;
+            }, this);
+
+            return choices;
+        },
+        */
+
         getResponse: function(model) {
-            var response = _.pluck(model.get('_selectedItems'), 'text');
-            return response.join(DELIMETER);
+            return model.getResponse().replace(/,|#/g, DELIMETER);
         }
 
     });

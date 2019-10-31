@@ -9,7 +9,7 @@ define([
     'libraries/xapiwrapper.min'
 ], function(Adapt, OfflineStorage, ErrorNotificationModel, LaunchModel, StatementModel, StateModel) {
 
-    var xAPI = _.extend({
+    var xAPI = Backbone.Controller.extend({
 
         _config: null,
         errorNotificationModel: null,
@@ -18,7 +18,10 @@ define([
         stateModel: null,
 
         initialize: function() {
-            this.listenToOnce(Adapt, 'app:dataLoaded', this.onDataLoaded);
+            this.listenToOnce(Adapt, {
+                'offlineStorage:prepare': this.onPrepareOfflineStorage,
+                'app:dataLoaded': this.onDataLoaded
+            });
         },
 
         initializeErrorNotification: function() {
@@ -41,11 +44,13 @@ define([
                     //registration: this.launchModel.get('registration'),
                     actor: this.launchModel.get('actor'),
                     contextActivities: this.launchModel.get('contextActivities')
-                },
-                _shouldRecordInteractions: this._config._tracking._shouldRecordInteractions
+                }
             };
 
-            this.statementModel = new StatementModel(config, { wrapper: this.launchModel.getWrapper() });
+            this.statementModel = new StatementModel(config, {
+                wrapper: this.launchModel.getWrapper(),
+                _shouldRecordInteractions: this._config._tracking._shouldRecordInteractions
+            });
         },
 
         initializeState: function() {
@@ -64,17 +69,21 @@ define([
         },
 
         getActivityId: function() {
+            // @todo: if using cmi5 the activityId MUST come from the query string for "cmi.defined" statements
             return this._config._activityId || this.launchModel.getWrapper().lrs.activityId;
+        },
+
+        // @todo: will cause conflict with adapt-contrib-spoor, even if xAPI is disabled
+        onPrepareOfflineStorage: function() {
+            Adapt.offlineStorage.initialize(OfflineStorage);
+            Adapt.offlineStorage.setReadyStatus();
         },
 
         onDataLoaded: function() {
             this._config = Adapt.config.get('_xapi');
 
             if (this._config && this._config._isEnabled) {
-                Adapt.trigger('plugin:beginWait');
-
-                Adapt.offlineStorage.initialize(OfflineStorage);
-                Adapt.offlineStorage.setReadyStatus();
+                Adapt.wait.begin();
 
                 this.initializeErrorNotification();
                 this.initializeLaunch();
@@ -87,13 +96,11 @@ define([
         },
 
         onStateLoaded: function() {
-            Adapt.trigger('plugin:endWait');
+            Adapt.wait.end();
         }
 
-    }, Backbone.Events);
+    });
 
-    xAPI.initialize();
-
-    return xAPI;
+    return new xAPI();
 
 });

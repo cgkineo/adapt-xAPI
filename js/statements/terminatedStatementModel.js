@@ -1,7 +1,6 @@
 define([
-    'core/js/adapt',
     './abstractStatementModel'
-], function(Adapt, AbstractStatementModel) {
+], function(AbstractStatementModel) {
 
     var TerminatedStatementModel = AbstractStatementModel.extend({
 

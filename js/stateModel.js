@@ -192,12 +192,10 @@ define([
         },
 
         onDataReady: function() {
-            Adapt.trigger('plugin:beginWait');
-
-            this.restore();
-
-            Adapt.trigger('plugin:endWait');
-        }, 
+            Adapt.wait.queue(_.bind(function() {
+                this.restore();
+            }, this));
+        },
 
         onAdaptInitialize: function() {
             this.setupListeners();

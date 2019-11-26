@@ -122,7 +122,7 @@ define([
 
         onNotifyClosed: function() {
             // launch without xAPI
-            Adapt.trigger('plugin:endWait');
+            Adapt.wait.end();
         }
 
     });

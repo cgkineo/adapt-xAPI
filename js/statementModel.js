@@ -37,6 +37,10 @@ define([
         },
 
         setupListeners: function() {
+            this.listenTo(Adapt.course, {
+                'change:_isComplete': this.onCourseComplete
+            });
+
             this.listenTo(Adapt.contentObjects, {
                 'change:_isComplete': this.onContentObjectComplete
             });
@@ -76,14 +80,21 @@ define([
         },
 
         sendTerminated: function() {
+            var model = Adapt.course;
+
+            this.setModelDuration(model);
+
             var config = this.get('_statementConfig');
             var statementModel = new TerminatedStatementModel(config);
-            var statement = statementModel.getData(Adapt.course);
+            var statement = statementModel.getData(model);
 
             this.send(statement);
         },
 
         sendCompleted: function(model) {
+            var modelType = model.get('_type');
+            if (modelType === "course" || modelType === "page") this.setModelDuration(model);
+
             var config = this.get('_statementConfig');
             var statementModel = new CompletedStatementModel(config);
             var statement = statementModel.getData(model);
@@ -92,6 +103,8 @@ define([
         },
 
         sendExperienced: function(model) {
+            this.setModelDuration(model);
+
             var config = this.get('_statementConfig');
             var statementModel = new ExperiencedStatementModel(config);
             var statement = statementModel.getData(model);
@@ -185,9 +198,25 @@ define([
             }
         },
 
+        setModelDuration: function(model) {
+            var sessionDuration = new Date().getTime() - model.get('_sessionStartTime');
+            var totalDuration = (model.get('_totalDuration') || 0) + sessionDuration;
+
+            model.set({
+                '_sessionDuration': sessionDuration,
+                '_totalDuration': totalDuration
+            });
+        },
+
         onAdaptInitialize: function() {
             this.setupListeners();
-        },        
+        },
+        
+        onCourseComplete: function(model) {
+            if (model.get('_isComplete')) {
+                this.sendCompleted(model);
+            }
+        },
 
         onContentObjectComplete: function(model) {
             if (model.get('_isComplete') && !model.get('_isOptional')) {

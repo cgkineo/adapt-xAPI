@@ -4,7 +4,8 @@ define([
     'libraries/async.min'
 ], function(Adapt, OfflineStorage, Async) {
 
-    var COMPONENT_KEY = 'components';
+    var COMPONENTS_KEY = 'components';
+    var DURATIONS_KEY = 'durations';
 
     var StateModel = Backbone.Model.extend({
 
@@ -12,7 +13,8 @@ define([
             activityId: null,
             actor: null,
             registration: null,
-            components: []
+            components: [],
+            durations: []
         },
 
         _shouldStoreResponses: false,
@@ -42,8 +44,14 @@ define([
         },
 
         setupListeners: function() {
-            // ideally core would trigger this event for each model so we don't have to return early for non-component types
-            this.listenTo(Adapt, 'state:change', this.onTrackableStateChange);
+            this.listenTo(Adapt, {
+                // ideally core would trigger this event for each model so we don't have to return early for non-component types
+                'state:change': this.onTrackableStateChange
+            });
+
+            this.listenTo(Adapt.contentObjects, {
+                'change:_totalDuration': this.onDurationChange
+            });
         },
 
         showErrorNotification: function() {
@@ -102,6 +110,7 @@ define([
 
         restore: function() {
             this._restoreComponentsData();
+            this._restoreDurationsData();
 
             this._isRestored = true;
 
@@ -150,11 +159,17 @@ define([
         },
 
         _restoreComponentsData: function(data) {
-            var state = this.get(COMPONENT_KEY);
+            this._restoreDataForState(this.get(COMPONENTS_KEY), Adapt.contentObjects);
+        },
 
+        _restoreDurationsData: function(data) {
+            this._restoreDataForState(this.get(DURATIONS_KEY), Adapt.contentObjects);
+        },
+
+        _restoreDataForState: function(state, collection) {
             if (state.length > 0) {
                 state.forEach(function(data) {
-                    var model = Adapt.components.findWhere({ '_id': data._id });
+                    var model = collection.findWhere({ '_id': data._id });
                     var restoreData = _.omit(data, '_id');
 
                     // account for models being removed in content without xAPI activityId or registration being changed
@@ -164,17 +179,10 @@ define([
         },
 
         _setComponentsData: function(model, data) {
-            var stateId = COMPONENT_KEY;
+            var stateId = COMPONENTS_KEY;
             var state = this.get(stateId);
             var modelId = model.get('_id');
-            var modelIndex;
-
-            state.forEach(function(sm, index) {
-                if (sm._id === modelId) {
-                    modelIndex = index;
-                    return index;
-                }
-            });
+            var modelIndex = this._getStateModelIndexFor(state, modelId);
 
             // responses won't properly be restored until https://github.com/adaptlearning/adapt_framework/issues/2522 is resolved
             if (model.get('_isQuestionType') && !this._shouldStoreResponses) {
@@ -186,9 +194,34 @@ define([
                 delete data._attemptsLeft;
             }
 
-            (modelIndex === undefined) ? state.push(data) : state[modelIndex] = data;
+            (modelIndex === null) ? state.push(data) : state[modelIndex] = data;
 
             this.set(stateId, state);
+        },
+
+        _setDurationsData: function(model) {
+            var stateId = DURATIONS_KEY;
+            var state = this.get(stateId);
+            var modelId = model.get('_id');
+            var modelIndex = this._getStateModelIndexFor(state, modelId);
+
+            var data = {
+                _id: modelId,
+                _totalDuration: model.get('_totalDuration')
+            };
+
+            (modelIndex === null) ? state.push(data) : state[modelIndex] = data;
+
+            this.set(stateId, state);
+        },
+
+        _getStateModelIndexFor: function(state, modelId) {
+            for (var i = 0, l = state.length; i < l; i++) {
+                var stateModel = state[i];
+                if (stateModel._id === modelId) return i;
+            }
+
+            return null;
         },
 
         onDataReady: function() {
@@ -199,6 +232,10 @@ define([
 
         onAdaptInitialize: function() {
             this.setupListeners();
+        },
+
+        onDurationChange: function(model) {
+            this._setDurationsData(model);
         },
 
         onTrackableStateChange: function(model, state) {

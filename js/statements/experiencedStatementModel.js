@@ -30,7 +30,7 @@ define([
 
         getResult: function(model) {
             var result = {
-                duration: this.getISO8601Duration(model)
+                duration: this.getISO8601Duration(model.get('_sessionDuration'))
             };
 
             return result;

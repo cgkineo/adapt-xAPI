@@ -143,9 +143,7 @@ define([
             return extensions;
         },
 
-        getISO8601Duration: function(model) {
-            var milliseconds = new Date().getTime() - model.get('_sessionStartTime');
-
+        getISO8601Duration: function(milliseconds) {
             return Utils.getISO8601Duration(milliseconds);
         }
 

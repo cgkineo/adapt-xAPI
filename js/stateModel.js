@@ -121,7 +121,7 @@ define([
             Backbone.Model.prototype.set.apply(this, arguments);
 
             // @todo: save everytime the value changes, or only on specific events?
-            if (this._isRestored) this.save(id);
+            if (this._isLoaded) this.save(id);
         },
 
         save: function(id) {

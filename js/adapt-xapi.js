@@ -18,10 +18,7 @@ define([
         stateModel: null,
 
         initialize: function() {
-            this.listenToOnce(Adapt, {
-                'offlineStorage:prepare': this.onPrepareOfflineStorage,
-                'app:dataLoaded': this.onDataLoaded
-            });
+            this.listenToOnce(Adapt, 'offlineStorage:prepare', this.onPrepareOfflineStorage);
         },
 
         initializeErrorNotification: function() {
@@ -31,9 +28,27 @@ define([
         },
 
         initializeLaunch: function() {
-            this.listenToOnce(Adapt, 'xapi:launchInitialized', this.onLaunchInitialized);
+            this.listenToOnce(Adapt, {
+                'xapi:launchInitialized': this.onLaunchInitialized,
+                'xapi:launchFailed': this.onLaunchFailed
+            });
 
             this.launchModel = new LaunchModel();
+        },
+
+        initializeState: function() {
+            this.listenTo(Adapt, 'xapi:stateLoaded', this.onStateLoaded);
+
+            var config = {
+                activityId: this.getActivityId(),
+                registration: this.launchModel.get('registration'),
+                actor: this.launchModel.get('actor')
+            };
+
+            this.stateModel = new StateModel(config, {
+                wrapper: this.launchModel.getWrapper(),
+                _shouldStoreResponses: this._config._tracking._shouldStoreResponses
+            });
         },
 
         initializeStatement: function() {
@@ -53,37 +68,21 @@ define([
             });
         },
 
-        initializeState: function() {
-            this.listenTo(Adapt, 'xapi:stateLoaded', this.onStateLoaded);
-
-            var config = {
-                activityId: this.getActivityId(),
-                registration: this.launchModel.get('registration'),
-                actor: this.launchModel.get('actor')
-            };
-
-            this.stateModel = new StateModel(config, {
-                wrapper: this.launchModel.getWrapper(),
-                _shouldStoreResponses: this._config._tracking._shouldStoreResponses
-            });
-        },
-
         getActivityId: function() {
             // @todo: if using cmi5 the activityId MUST come from the query string for "cmi.defined" statements
-            return this._config._activityId || this.launchModel.getWrapper().lrs.activityId;
+            var lrs = this.launchModel.getWrapper().lrs;
+
+            return this._config._activityId || lrs.activity_id || lrs.activityId;
         },
 
-        // @todo: will cause conflict with adapt-contrib-spoor, even if xAPI is disabled
+        // @todo: offlineStorage conflict with adapt-contrib-spoor
         onPrepareOfflineStorage: function() {
-            Adapt.offlineStorage.initialize(OfflineStorage);
-            Adapt.offlineStorage.setReadyStatus();
-        },
-
-        onDataLoaded: function() {
             this._config = Adapt.config.get('_xapi');
 
             if (this._config && this._config._isEnabled) {
                 Adapt.wait.begin();
+
+                Adapt.offlineStorage.initialize(OfflineStorage);
 
                 this.initializeErrorNotification();
                 this.initializeLaunch();
@@ -91,12 +90,25 @@ define([
         },
 
         onLaunchInitialized: function() {
-            this.initializeStatement();
+            this.listenToOnce(Adapt, 'app:dataLoaded', this.onDataLoaded);
+            
             this.initializeState();
+        },
+
+        onLaunchFailed: function() {
+            Adapt.wait.end();
+
+            Adapt.offlineStorage.setReadyStatus();
         },
 
         onStateLoaded: function() {
             Adapt.wait.end();
+
+            Adapt.offlineStorage.setReadyStatus();
+        },
+
+        onDataLoaded: function() {
+            this.initializeStatement();
         }
 
     });

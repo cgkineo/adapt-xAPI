@@ -51,8 +51,6 @@ define([
         },
 
         showErrorNotification: function() {
-            this.listenToOnce(Adapt, 'notify:closed', this.onNotifyClosed);
-
             Adapt.trigger('xapi:launchError');
         },
 
@@ -74,9 +72,11 @@ define([
                 // can ADL launch include registration?
                 var launchData = {
                     'registration': launchdata.registration || null,
-                    'actor': launchdata.actor,
-                    'contextActivities': launchdata.contextActivities
+                    'actor': launchdata.actor
                 };
+
+                var contextActivities = launchdata.contextActivities;
+                if (!(_.isEmpty(contextActivities))) launchData.contextActivities = contextActivities;
 
                 this.set(launchData);
 
@@ -115,14 +115,9 @@ define([
         },
 
         onLaunchFail: function() {
-            $('.loading').hide();
+            Adapt.trigger('xapi:launchFailed');
 
             this.showErrorNotification();
-        },
-
-        onNotifyClosed: function() {
-            // launch without xAPI
-            Adapt.wait.end();
         }
 
     });

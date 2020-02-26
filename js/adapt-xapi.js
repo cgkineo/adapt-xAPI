@@ -12,6 +12,7 @@ define([
     var xAPI = Backbone.Controller.extend({
 
         _config: null,
+        _activityId: null,
         errorNotificationModel: null,
         launchModel: null,
         statementModel: null,
@@ -69,10 +70,15 @@ define([
         },
 
         getActivityId: function() {
-            // @todo: if using cmi5 the activityId MUST come from the query string for "cmi.defined" statements
-            var lrs = this.launchModel.getWrapper().lrs;
+            if (this._activityId) return this._activityId;
 
-            return this._config._activityId || lrs.activity_id || lrs.activityId;
+            var lrs = this.launchModel.getWrapper().lrs;
+            // @todo: if using cmi5 the activityId MUST come from the query string for "cmi.defined" statements - can be achieved by leaving empty in config.json
+            var activityId = this._config._activityId || lrs.activity_id || lrs.activityId;
+            // remove trailing slash if included
+            activityId = activityId.replace(/\/?$/, "");
+
+            return activityId;
         },
 
         // @todo: offlineStorage conflict with adapt-contrib-spoor
@@ -91,6 +97,8 @@ define([
 
         onLaunchInitialized: function() {
             this.listenToOnce(Adapt, 'app:dataLoaded', this.onDataLoaded);
+
+            this._activityId = this.getActivityId();
             
             this.initializeState();
         },

@@ -62,7 +62,7 @@ define([
             var activityId = this.get('activityId');
             var actor = this.get('actor');
             var registration = this.get('registration');
-            var states = this.xAPIWrapper.getState(activityId, actor);
+            var states = this.xAPIWrapper.getState(activityId, actor, null, registration);
 
             if (states === null) {
                 this.showErrorNotification();

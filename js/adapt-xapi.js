@@ -48,7 +48,7 @@ define([
 
             this.stateModel = new StateModel(config, {
                 wrapper: this.launchModel.getWrapper(),
-                _shouldStoreResponses: this._config._tracking._shouldStoreResponses
+                _tracking: this._config._tracking
             });
         },
 
@@ -65,7 +65,7 @@ define([
 
             this.statementModel = new StatementModel(config, {
                 wrapper: this.launchModel.getWrapper(),
-                _shouldRecordInteractions: this._config._tracking._shouldRecordInteractions
+                _tracking: this._config._tracking
             });
         },
 

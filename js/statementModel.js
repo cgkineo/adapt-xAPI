@@ -1,5 +1,6 @@
 define([
     'core/js/adapt',
+    'core/js/enums/completionStateEnum',
     './statements/initializedStatementModel',
     './statements/terminatedStatementModel',
     './statements/completedStatementModel',
@@ -12,19 +13,26 @@ define([
     './statements/resourceItemStatementModel',
     './statements/favouriteStatementModel',
     './statements/unfavouriteStatementModel'
-], function(Adapt, InitializedStatementModel, TerminatedStatementModel, CompletedStatementModel, ExperiencedStatementModel, McqStatementModel, SliderStatementModel, TextInputStatementModel, MatchingStatementModel, AssessmentStatementModel, ResourceItemStatementModel, FavouriteStatementModel, UnfavouriteStatementModel) {
+], function(Adapt, COMPLETION_STATE, InitializedStatementModel, TerminatedStatementModel, CompletedStatementModel, ExperiencedStatementModel, McqStatementModel, SliderStatementModel, TextInputStatementModel, MatchingStatementModel, AssessmentStatementModel, ResourceItemStatementModel, FavouriteStatementModel, UnfavouriteStatementModel) {
 
     var StatementModel = Backbone.Model.extend({
 
         xAPIWrapper: null,
-        _shouldRecordInteractions: true,
+
+        _tracking: {
+            _questionInteractions: true,
+            _assessmentsCompletion: true,
+            _assessmentCompletion: true
+        },
+
         _terminate: false,
 
         initialize: function(attributes, options) {
             this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
 
             this.xAPIWrapper = options.wrapper;
-            this._shouldRecordInteractions = options._shouldRecordInteractions;
+            
+            _.extend(this._tracking, options._tracking);
 
             //this.loadRecipe();
 
@@ -37,10 +45,6 @@ define([
         },
 
         setupListeners: function() {
-            this.listenTo(Adapt.course, {
-                'change:_isComplete': this.onCourseComplete
-            });
-
             this.listenTo(Adapt.contentObjects, {
                 'change:_isComplete': this.onContentObjectComplete
             });
@@ -53,12 +57,25 @@ define([
                 'resources:itemClicked': this.onResourceClicked,
                 'pageView:ready': this.onPageViewReady,
                 'router:location': this.onRouterLocation,
-                'assessments:complete': this.onAssessmentsComplete
+                'tracking:complete': this.onTrackingComplete
             });
 
-            if (this._shouldRecordInteractions) {
+            if (this._tracking._questionInteractions) {
                 this.listenTo(Adapt, {
                     'questionView:recordInteraction': this.onQuestionInteraction
+                });
+            }
+
+            // @todo: if only 1 Adapt.assessment._assessments, override so we never record both statements - leave to config.json for now?
+            if (this._tracking._assessmentsCompletion) {
+                this.listenTo(Adapt, {
+                    'assessments:complete': this.onAssessmentsComplete
+                });
+            }
+
+            if (this._tracking._assessmentCompletion) {
+                this.listenTo(Adapt, {
+                    'assessment:complete': this.onAssessmentComplete
                 });
             }
         },
@@ -140,10 +157,10 @@ define([
             this.send(statement);
         },
 
-        sendAssessmentCompleted: function(model) {
+        sendAssessmentCompleted: function(model, state) {
             var config = this.get('_statementConfig');
             var statementModel = new AssessmentStatementModel(config);
-            var statement = statementModel.getData(model);
+            var statement = statementModel.getData(model, state);
 
             this.send(statement);
         },
@@ -211,12 +228,6 @@ define([
         onAdaptInitialize: function() {
             this.setupListeners();
         },
-        
-        onCourseComplete: function(model) {
-            if (model.get('_isComplete')) {
-                this.sendCompleted(model);
-            }
-        },
 
         onContentObjectComplete: function(model) {
             if (model.get('_isComplete') && !model.get('_isOptional')) {
@@ -232,7 +243,27 @@ define([
 
         onAssessmentsComplete: function(state, model) {
             // defer as triggered before last question triggers questionView:recordInteraction
-            _.defer(_.bind(this.sendAssessmentCompleted, this), model);
+            _.defer(_.bind(this.sendAssessmentCompleted, this), model, state);
+        },
+
+        onAssessmentComplete: function(state) {
+            // create model based on Adapt.course._assessment, otherwise use Adapt.course as base
+            var model;
+            var assessmentConfig = Adapt.course.get('_assessment');
+
+            if (assessmentConfig && assessmentConfig._id && assessmentConfig.title) {
+                model = new Backbone.Model(assessmentConfig);
+            } else {
+                model = Adapt.course;
+            }
+
+            _.defer(_.bind(this.sendAssessmentCompleted, this), model, state);
+        },
+
+        onTrackingComplete: function(completionData) {
+            this.sendCompleted(Adapt.course);
+            
+            // no need to use completionData.assessment due to assessment:complete listener, which isn't restricted to only firing on tracking:complete
         },
 
         onQuestionInteraction: function(view) {

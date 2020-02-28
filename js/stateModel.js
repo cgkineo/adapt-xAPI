@@ -17,15 +17,18 @@ define([
             durations: []
         },
 
-        _shouldStoreResponses: false,
-        _isLoaded: false,
+        _tracking: {
+            _storeQuestionResponses: false
+        },
+
         _isRestored: false,
 
         initialize: function(attributes, options) {
             this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
 
             this.xAPIWrapper = options.wrapper;
-            this._shouldStoreResponses = options._shouldStoreResponses;
+            
+            _.extend(this._tracking, options._tracking);
 
             this.setOfflineStorageModel();
 
@@ -63,6 +66,7 @@ define([
             var actor = this.get('actor');
             var registration = this.get('registration');
             var states = this.xAPIWrapper.getState(activityId, actor, null, registration);
+            
 
             if (states === null) {
                 this.showErrorNotification();
@@ -120,7 +124,7 @@ define([
         set: function(id, value) {
             Backbone.Model.prototype.set.apply(this, arguments);
 
-            // @todo: save everytime the value changes, or only on specific events?
+            // @todo: save every time the value changes, or only on specific events?
             if (this._isLoaded) this.save(id);
         },
 
@@ -142,7 +146,7 @@ define([
         },
 
         delete: function(id) {
-            this.xAPIWrapper.deleteState(this.get('activityId'), this.get('actor'), id, this.get('registration'), this.get(id), null, function(request) {
+            this.xAPIWrapper.deleteState(this.get('activityId'), this.get('actor'), id, this.get('registration'), null, null, function(request) {
                 Adapt.log.debug(request.response);
 
                 switch (request.status) {
@@ -185,7 +189,7 @@ define([
             var modelIndex = this._getStateModelIndexFor(state, modelId);
 
             // responses won't properly be restored until https://github.com/adaptlearning/adapt_framework/issues/2522 is resolved
-            if (model.get('_isQuestionType') && !this._shouldStoreResponses) {
+            if (model.get('_isQuestionType') && !this._tracking._storeQuestionResponses) {
                 delete data._isInteractionComplete;
                 delete data._userAnswer;
                 delete data._isSubmitted;

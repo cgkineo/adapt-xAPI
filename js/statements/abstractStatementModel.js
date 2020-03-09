@@ -86,12 +86,13 @@ define([
 
         getContextActivitiesGrouping: function(model) {
             var grouping = this.get('contextActivities').grouping.slice();
+
             grouping.push(this.getCourseContextActivity());
 
             var modelType = model.get('_type');
 
             if (modelType && modelType !== "course") {
-                grouping.push(this.getContentObjectContextActivity(model));
+                grouping.push.apply(grouping, this.getContentObjectsContextActivities(model));
             }
 
             return grouping;
@@ -102,6 +103,25 @@ define([
             object.definition.type = ADL.activityTypes.course;
 
             return object;
+        },
+
+        getContentObjectsContextActivities: function(model) {
+            var contentObjects = model.getAncestorModels(true).filter(function(model) {
+                var modelType = model.get('_type');
+                var isContentObject = modelType === "menu" || modelType === "page";
+
+                if (isContentObject) return model;
+            });
+
+            contentObjects.reverse();
+
+            var activities = [];
+
+            contentObjects.forEach(function(model) {
+                activities.push(this.getContentObjectContextActivity(model));
+            }, this);
+
+            return activities;
         },
 
         getContentObjectContextActivity: function(model) {

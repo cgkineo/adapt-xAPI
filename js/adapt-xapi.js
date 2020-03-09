@@ -116,6 +116,10 @@ define([
         },
 
         onDataLoaded: function() {
+            var globals = Adapt.course.get('_globals');
+            if (!globals._learnerInfo) globals._learnerInfo = {};
+            globals._learnerInfo = Adapt.offlineStorage.get('learnerinfo');
+
             this.initializeStatement();
         }
 

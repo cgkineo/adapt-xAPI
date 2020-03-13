@@ -21,10 +21,16 @@ define([
             _storeQuestionResponses: false
         },
 
+        _isLoaded: false,
         _isRestored: false,
 
         initialize: function(attributes, options) {
             this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
+
+            this.listenTo(Adapt, {
+                'xapi:languageChangedStateReset': this.onLanguageChangedStateReset,
+                'xapi:stateReset': this.onStateReset
+            });
 
             this.xAPIWrapper = options.wrapper;
             
@@ -67,7 +73,6 @@ define([
             var registration = this.get('registration');
             var states = this.xAPIWrapper.getState(activityId, actor, null, registration);
             
-
             if (states === null) {
                 this.showErrorNotification();
             } else {
@@ -112,6 +117,28 @@ define([
             }
         },
 
+        reset: function() {
+            var states = this._getStates();
+            var scope = this;
+
+            Adapt.wait.begin();
+
+            Async.each(states, function(id, callback) {
+                scope.delete(id, callback);
+            }, function(err) {
+                if (err) {
+                    scope.showErrorNotification();
+                }
+
+                var data = {};
+                data[COMPONENTS_KEY] = [];
+                data[DURATIONS_KEY] = [];
+                scope.set(data, { silent: true });
+
+                Adapt.wait.end();
+            });
+        },
+
         restore: function() {
             this._restoreComponentsData();
             this._restoreDurationsData();
@@ -145,7 +172,9 @@ define([
             });
         },
 
-        delete: function(id) {
+        delete: function(id, callback) {
+            this.unset(id, { silent: true });
+
             this.xAPIWrapper.deleteState(this.get('activityId'), this.get('actor'), id, this.get('registration'), null, null, function(request) {
                 Adapt.log.debug(request.response);
 
@@ -159,14 +188,25 @@ define([
                         this.showErrorNotification();
                         break;
                 }
+
+                if (callback) callback();
             });
         },
 
-        _restoreComponentsData: function(data) {
+        _getStates: function() {
+            var activityId = this.get('activityId');
+            var actor = this.get('actor');
+            var registration = this.get('registration');
+            var states = this.xAPIWrapper.getState(activityId, actor, null, registration);
+
+            return states;
+        },
+
+        _restoreComponentsData: function() {
             this._restoreDataForState(this.get(COMPONENTS_KEY), Adapt.components);
         },
 
-        _restoreDurationsData: function(data) {
+        _restoreDurationsData: function() {
             this._restoreDataForState(this.get(DURATIONS_KEY), Adapt.contentObjects);
         },
 
@@ -247,7 +287,38 @@ define([
 
             // don't actually need state._isCorrect and state._score for questions, but save trackable state as provided
             this._setComponentsData(model, state);
-        }
+        },
+
+        onStateReset: function() {
+            this.reset();
+        },
+
+        // @todo: resetting could go against cmi5 spec, if course was previosuly completed - can't send multiple "cmi.defined" statements for some verbs
+        onLanguageChangedStateReset: function() {
+            var states = this._getStates();
+
+            var statesToReset = states.filter(function(id) {
+                return id !== DURATIONS_KEY && id !== 'lang';
+            });
+
+            var scope = this;
+
+            Adapt.wait.begin();
+
+            Async.each(statesToReset, function(id, callback) {
+                scope.delete(id, callback);
+            }, function(err) {
+                if (err) {
+                    scope.showErrorNotification();
+                }
+
+                var data = {};
+                data[COMPONENTS_KEY] = [];
+                scope.set(data, { silent: true });
+
+                Adapt.wait.end();
+            });
+        },
 
     });
 

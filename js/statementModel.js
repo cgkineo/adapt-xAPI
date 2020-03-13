@@ -3,6 +3,7 @@ define([
     'core/js/enums/completionStateEnum',
     './statements/initializedStatementModel',
     './statements/terminatedStatementModel',
+    './statements/preferredLanguageStatementModel',
     './statements/completedStatementModel',
     './statements/experiencedStatementModel',
     './statements/mcqStatementModel',
@@ -13,7 +14,7 @@ define([
     './statements/resourceItemStatementModel',
     './statements/favouriteStatementModel',
     './statements/unfavouriteStatementModel'
-], function(Adapt, COMPLETION_STATE, InitializedStatementModel, TerminatedStatementModel, CompletedStatementModel, ExperiencedStatementModel, McqStatementModel, SliderStatementModel, TextInputStatementModel, MatchingStatementModel, AssessmentStatementModel, ResourceItemStatementModel, FavouriteStatementModel, UnfavouriteStatementModel) {
+], function(Adapt, COMPLETION_STATE, InitializedStatementModel, TerminatedStatementModel, PreferredLanguageStatementModel, CompletedStatementModel, ExperiencedStatementModel, McqStatementModel, SliderStatementModel, TextInputStatementModel, MatchingStatementModel, AssessmentStatementModel, ResourceItemStatementModel, FavouriteStatementModel, UnfavouriteStatementModel) {
 
     var StatementModel = Backbone.Model.extend({
 
@@ -25,26 +26,33 @@ define([
             _assessmentCompletion: true
         },
 
+        _hasLanguageChanged: false,
         _terminate: false,
 
         initialize: function(attributes, options) {
-            this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
+            this.listenToOnce(Adapt, {
+                'adapt:initialize': this.onAdaptInitialize
+            });
+
+            this.listenTo(Adapt, {
+                'xapi:languageChanged': this.onLanguageChanged
+            });
 
             this.xAPIWrapper = options.wrapper;
             
             _.extend(this._tracking, options._tracking);
 
             //this.loadRecipe();
+        },
 
-            this.sendInitialized();
+        loadRecipe: function() {
 
-            Adapt.course.set('_sessionStartTime', new Date().getTime());
-
-            this._onWindowUnload = _.bind(this.onWindowUnload, this);
-            $(window).on('beforeunload unload', this._onWindowUnload);
         },
 
         setupListeners: function() {
+            this._onWindowUnload = _.bind(this.onWindowUnload, this);
+            $(window).on('beforeunload unload', this._onWindowUnload);
+            
             this.listenTo(Adapt.contentObjects, {
                 'change:_isComplete': this.onContentObjectComplete
             });
@@ -54,9 +62,9 @@ define([
             });
 
             this.listenTo(Adapt, {
-                'resources:itemClicked': this.onResourceClicked,
                 'pageView:ready': this.onPageViewReady,
                 'router:location': this.onRouterLocation,
+                'resources:itemClicked': this.onResourceClicked,
                 'tracking:complete': this.onTrackingComplete
             });
 
@@ -80,17 +88,13 @@ define([
             }
         },
 
-        loadRecipe: function() {
-
-        },
-
         showErrorNotification: function() {
             Adapt.trigger('xapi:lrsError');
         },
 
         sendInitialized: function() {
-            var config = this.get('_statementConfig');
-            var statementModel = new InitializedStatementModel(this.get('_statementConfig'));
+            var config = this.attributes;
+            var statementModel = new InitializedStatementModel(config);
             var statement = statementModel.getData(Adapt.course);
 
             this.send(statement);
@@ -101,9 +105,17 @@ define([
 
             this.setModelDuration(model);
 
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new TerminatedStatementModel(config);
             var statement = statementModel.getData(model);
+
+            this.send(statement);
+        },
+
+        sendPreferredLanguage: function() {
+            var config = this.attributes;
+            var statementModel = new PreferredLanguageStatementModel(config);
+            var statement = statementModel.getData(Adapt.course, Adapt.config.get('_activeLanguage'));
 
             this.send(statement);
         },
@@ -112,7 +124,7 @@ define([
             var modelType = model.get('_type');
             if (modelType === "course" || modelType === "page") this.setModelDuration(model);
 
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new CompletedStatementModel(config);
             var statement = statementModel.getData(model);
 
@@ -122,7 +134,7 @@ define([
         sendExperienced: function(model) {
             this.setModelDuration(model);
 
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new ExperiencedStatementModel(config);
             var statement = statementModel.getData(model);
 
@@ -130,7 +142,7 @@ define([
         },
 
         sendQuestionAnswered: function(model) {
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var questionType = model.get('_component');
             var statementClass;
 
@@ -158,7 +170,7 @@ define([
         },
 
         sendAssessmentCompleted: function(model, state) {
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new AssessmentStatementModel(config);
             var statement = statementModel.getData(model, state);
 
@@ -166,7 +178,7 @@ define([
         },
 
         sendResourceExperienced: function(model) {
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new ResourceItemStatementModel(config);
             var statement = statementModel.getData(model);
 
@@ -174,7 +186,7 @@ define([
         },
 
         sendFavourite: function(model) {
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new FavouriteStatementModel(config);
             var statement = statementModel.getData(model);
 
@@ -182,7 +194,7 @@ define([
         },
 
         sendUnfavourite: function(model) {
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new UnfavouriteStatementModel(config);
             var statement = statementModel.getData(model);
 
@@ -225,8 +237,46 @@ define([
             });
         },
 
+        onLanguageChanged: function(lang) {
+            this._hasLanguageChanged = true;
+
+            // send statement if language has changed since the course was started - call in `onAdaptInitialize` is only used initially to ensure correct execution order of statements
+            if (Adapt.get('_isStarted')) this.sendPreferredLanguage();
+
+            this.set('lang', lang);
+        },
+
         onAdaptInitialize: function() {
+            this.sendInitialized();
+
+            Adapt.course.set('_sessionStartTime', new Date().getTime());
+
             this.setupListeners();
+
+            // only called if course contains a language picker
+            if (this._hasLanguageChanged) this.sendPreferredLanguage();
+        },
+
+        // add into core?
+        onPageViewReady: function(view) {
+            var model = view.model;
+
+            model.set('_sessionStartTime', new Date().getTime());
+        },
+
+        onRouterLocation: function() {
+            var previousId = Adapt.location._previousId;
+
+            if (!previousId) return;
+
+            var model = Adapt.findById(previousId);
+
+            // only record experienced statements for pages
+            if (model.get('_type') !== "page") return;
+
+            this.sendExperienced(model);
+
+            model.unset('_sessionStartTime', { silent: true });
         },
 
         onContentObjectComplete: function(model) {
@@ -268,28 +318,6 @@ define([
 
         onQuestionInteraction: function(view) {
             this.sendQuestionAnswered(view.model);
-        },
-
-        // add into core?
-        onPageViewReady: function(view) {
-            var model = view.model;
-
-            model.set('_sessionStartTime', new Date().getTime());
-        },
-
-        onRouterLocation: function() {
-            var previousId = Adapt.location._previousId;
-
-            if (!previousId) return;
-
-            var model = Adapt.findById(previousId);
-
-            // only record experienced statements for pages
-            if (model.get('_type') !== "page") return;
-
-            this.sendExperienced(model);
-
-            model.unset('_sessionStartTime', { silent: true });
         },
 
         onResourceClicked: function(data) {

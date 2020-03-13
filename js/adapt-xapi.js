@@ -13,6 +13,8 @@ define([
 
         _config: null,
         _activityId: null,
+        _restoredLanguage: null,
+        _currentLanguage: null,
         errorNotificationModel: null,
         launchModel: null,
         statementModel: null,
@@ -54,13 +56,10 @@ define([
 
         initializeStatement: function() {
             var config = {
-                _statementConfig: {
-                    lang: Adapt.config.get('_activeLanguage'),
-                    activityId: this.getActivityId(),
-                    //registration: this.launchModel.get('registration'),
-                    actor: this.launchModel.get('actor'),
-                    contextActivities: this.launchModel.get('contextActivities')
-                }
+                activityId: this.getActivityId(),
+                //registration: this.launchModel.get('registration'),
+                actor: this.launchModel.get('actor'),
+                contextActivities: this.launchModel.get('contextActivities')
             };
 
             this.statementModel = new StatementModel(config, {
@@ -96,17 +95,43 @@ define([
         },
 
         onLaunchInitialized: function() {
-            this.listenToOnce(Adapt, 'app:dataLoaded', this.onDataLoaded);
+            this.listenToOnce(Adapt, {
+                'offlineStorage:ready': this.onOfflineStorageReady,
+                'app:dataLoaded': this.onDataLoaded
+            });
+
+            this.listenTo(Adapt, {
+                'app:languageChanged': this.onLanguageChanged
+            });
 
             this._activityId = this.getActivityId();
             
             this.initializeState();
+            this.initializeStatement();
         },
 
         onLaunchFailed: function() {
             Adapt.wait.end();
 
             Adapt.offlineStorage.setReadyStatus();
+        },
+
+        onOfflineStorageReady: function() {
+            this._restoredLanguage = Adapt.offlineStorage.get('lang');
+        },
+
+        onLanguageChanged: function(lang) {
+            var languageConfig = Adapt.config.get('_languagePicker');
+
+            if (languageConfig && languageConfig._isEnabled && this._restoredLanguage !== lang && this._currentLanguage !== lang) {
+                // @todo: only send when via a user selection? If `"_showOnCourseLoad": false`, this will still be triggered
+                Adapt.trigger('xapi:languageChanged', lang);
+
+                // only trigger reset if language has changed since the course was started - not neccessary before
+                if (Adapt.get('_isStarted') && !languageConfig._restoreStateOnLanguageChange) Adapt.trigger('xapi:languageChangedStateReset');
+            }
+
+            this._currentLanguage = lang;
         },
 
         onStateLoaded: function() {
@@ -117,10 +142,8 @@ define([
 
         onDataLoaded: function() {
             var globals = Adapt.course.get('_globals');
-            if (!globals._learnerInfo) globals._learnerInfo = {};
+            if (!globals._learnerInfo) globals._learnerInfo = {};            
             globals._learnerInfo = Adapt.offlineStorage.get('learnerinfo');
-
-            this.initializeStatement();
         }
 
     });

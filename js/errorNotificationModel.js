@@ -10,6 +10,7 @@ define([
             this.listenToOnce(Adapt, {
                 'app:dataLoaded': this.onDataLoaded,
                 'xapi:launchError': this.onShowLaunchError,
+                'xapi:activityIdError': this.onShowActivityIdError,
                 'xapi:lrsError': this.onShowLRSError
             });
         },
@@ -21,13 +22,21 @@ define([
                     title: config.title,
                     body: config.body
                 };
+
+                var isCancellable = true;
+
+                if (config.hasOwnProperty('_isCancellable')) {
+                    isCancellable = config._isCancellable;
+                    notifyObject._isCancellable = isCancellable;
+                    notifyObject._closeOnShadowClick = !isCancellable;
+                }
     
                 Adapt.log.error(config.title);
 
                 if (isDeferred) {
                     Adapt.wait.begin();
 
-                    this.listenToOnce(Adapt, 'notify:closed', this.onNotifyClosed);
+                    if (isCancellable) this.listenToOnce(Adapt, 'notify:closed', this.onNotifyClosed);
 
                     $('.loading').hide();
                 }
@@ -47,6 +56,10 @@ define([
 
         onShowLaunchError: function() {
             this.showNotification(this.get('_launch'));
+        },
+
+        onShowActivityIdError: function() {
+            this.showNotification(this.get('_activityId'));
         },
 
         onShowLRSError: function() {

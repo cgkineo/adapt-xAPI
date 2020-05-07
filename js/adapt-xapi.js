@@ -72,8 +72,12 @@ define([
             if (this._activityId) return this._activityId;
 
             var lrs = this.launchModel.getWrapper().lrs;
-            // @todo: if using cmi5 the activityId MUST come from the query string for "cmi.defined" statements - can be achieved by leaving empty in config.json
-            var activityId = this._config._activityId || lrs.activity_id || lrs.activityId;
+            // if using cmi5 the activityId MUST come from the query string for "cmi.defined" statements
+            var activityId = lrs.activityId || lrs.activity_id || this._config._activityId;
+
+            // @todo: should activityId be derived from URL? Would suggest not as the domain may not be controlled by the author/vendor
+            if (!activityId) Adapt.trigger('xapi:activityIdError');
+
             // remove trailing slash if included
             activityId = activityId.replace(/\/?$/, "");
 
@@ -95,6 +99,14 @@ define([
         },
 
         onLaunchInitialized: function() {
+            this._activityId = this.getActivityId();
+
+            if (!this._activityId) {
+                this.onLaunchFailed();
+                
+                return;
+            }
+
             this.listenToOnce(Adapt, {
                 'offlineStorage:ready': this.onOfflineStorageReady,
                 'app:dataLoaded': this.onDataLoaded
@@ -103,8 +115,6 @@ define([
             this.listenTo(Adapt, {
                 'app:languageChanged': this.onLanguageChanged
             });
-
-            this._activityId = this.getActivityId();
             
             this.initializeState();
             this.initializeStatement();

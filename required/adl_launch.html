@@ -21,7 +21,7 @@
 				data: getData(),
 				processData: false,
 				success: function(msg) {
-					window.location = 'index.html?xAPILaunchService=' + getLauncherEndpoint() + '&xAPILaunchKey=' + encodeURIComponent(msg.key);
+					window.location = 'index.html?xAPILaunchService=' + getLauncherEndpoint() + '&xAPILaunchKey=' + encodeURIComponent(msg.key) + '&activity_id=' + getActivityId() + '&registration=' + getRegistration();
 				}
 			});
 
@@ -48,6 +48,18 @@
 				return encodeURIComponent(endpoint);
 			}
 
+			function getActivityId() {
+				var activityId = "https://example.com/unique_identifier";
+
+				return encodeURIComponent(activityId);
+			}
+
+			function getRegistration() {
+				var uuid = "";
+
+				return uuid;
+			}
+
 			function getData() {
 				var data = {
 					statement: {
@@ -60,7 +72,7 @@
 								grouping: [
 									{
 										objectType: "Activity",
-										id: "http://example.com/course_identifier",
+										id: "https://example.com/course_identifier",
 										definition: {
 											name: {
 												en: "Test Course"

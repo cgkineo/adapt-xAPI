@@ -18,7 +18,7 @@ define([
         },
 
         _tracking: {
-            _storeQuestionResponses: false
+            _storeQuestionResponses: true
         },
 
         _isLoaded: false,

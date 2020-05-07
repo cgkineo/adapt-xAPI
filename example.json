@@ -1,20 +1,30 @@
-// to be added to course/config.json
+// to be added to config.json
 {
 	"_xapi": {
-	    "_isEnabled": true,
-	    "_activityId": "http://example.com/my_unique_identifier",
-	    "_tracking": {
-	        "_shouldRecordInteractions": true,
-            "_shouldStoreResponses": true
-	    },
+        "_isEnabled": true,
+        "_comment": "included in tincan.xml. _activityId will be overriden if changed on the hosting environment.",
+	    "_activityId": "https://example.com/unique_identifier",
+        "_tracking": {
+            "_storeQuestionResponses": true,
+            "_questionInteractions": true,
+            "_assessmentsCompletion": false,
+            "_assessmentCompletion": true
+        },
         "_errors": {
             "_launch": {
                 "title": "ADL launch could not be initialized",
-                "body": "This activity will not be tracked."
+                "body": "This activity will not be tracked.",
+                "_isCancellable": true
             },
             "_lrs": {
                 "title": "LRS could not be found",
-                "body": "There was a problem communicating with the LRS. Tracking data may be lost."
+                "body": "There was a problem communicating with the LRS. Tracking data may be lost if you continue with this session.",
+                "_isCancellable": true
+            },
+            "_activityId": {
+                "title": "Missing Activity IRI",
+                "body": "An Activity id has not been set. This activity will not be tracked.",
+                "_isCancellable": true
             }
         }
 	}

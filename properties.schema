@@ -23,13 +23,13 @@
                   "title": "Is Enabled",
                   "inputType": "Checkbox",
                   "validators": [],
-                  "help": "If enabled, this course will be tracked by xAPI."
+                  "help": "If enabled, the course will be tracked by xAPI."
                 },
                 "_activityId": {
                   "type": "string",
                   "required": true,
                   "title": "Activity ID",
-                  "default": "http://example.com/my_unique_identifier",
+                  "default": "https://example.com/unique_identifier",
                   "inputType": "Text",
                   "validators": [],
                   "help": "Unique identifier for this xAPI activity."
@@ -39,14 +39,41 @@
                   "required": false,
                   "title": "Tracking",
                   "properties": {
-                    "_shouldRecordInteractions": {
+                    "_storeQuestionResponses": {
                       "type": "boolean",
                       "required": false,
                       "default": true,
-                      "title": "Record responses",
+                      "title": "Store question responses",
                       "inputType": "Checkbox",
                       "validators": [],
-                      "help": "If enabled, the course will send statements recording the user's responses to questions."
+                      "help": "If enabled, the course will store the user's question responses across sessions."
+                    },
+                    "_questionInteractions": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": true,
+                      "title": "Record question responses",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "If enabled, the course will send statements recording the user's question responses."
+                    },
+                    "_assessmentsCompletion": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Record assessments completion",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "If enabled, the course will send a statement for each assessment that is completed. Recommended only for courses containing multiple assessments."
+                    },
+                    "_assessmentCompletion": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": true,
+                      "title": "Record assessment completion",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "If enabled, the course will send a statement when the assessment have been completed. If using multiple assessments, the statement will be sent when all assessments have been completed."
                     }
                   }
                 },
@@ -77,6 +104,15 @@
                           "inputType": "Text",
                           "validators": [],
                           "help": ""
+                        },
+                        "_isCancellable": {
+                          "type": "boolean",
+                          "required": false,
+                          "default": true,
+                          "title": "Cancel notification",
+                          "inputType": "Checkbox",
+                          "validators": [],
+                          "help": "If enabled, the user can close the notification and continue with an untracked session."
                         }
                       }
                     },
@@ -102,6 +138,49 @@
                           "inputType": "Text",
                           "validators": [],
                           "help": ""
+                        },
+                        "_isCancellable": {
+                          "type": "boolean",
+                          "required": false,
+                          "default": true,
+                          "title": "Cancel notification",
+                          "inputType": "Checkbox",
+                          "validators": [],
+                          "help": "If enabled, the user can close the notification and continue with an untracked session."
+                        }
+                      }
+                    },
+                    "_activityId": {
+                      "type": "object",
+                      "required": false,
+                      "title": "LRS",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "required": true,
+                          "title": "Title",
+                          "default": "Missing Activity IRI",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
+                        "body": {
+                          "type": "string",
+                          "required": true,
+                          "title": "Body",
+                          "default": "An Activity id has not been set. This activity will not be tracked.",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
+                        "_isCancellable": {
+                          "type": "boolean",
+                          "required": false,
+                          "default": true,
+                          "title": "Cancel notification",
+                          "inputType": "Checkbox",
+                          "validators": [],
+                          "help": "If enabled, the user can close the notification and continue with an untracked session."
                         }
                       }
                     }

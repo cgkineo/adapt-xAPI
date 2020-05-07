@@ -22,7 +22,7 @@ define([
 
         _tracking: {
             _questionInteractions: true,
-            _assessmentsCompletion: true,
+            _assessmentsCompletion: false,
             _assessmentCompletion: true
         },
 
@@ -202,7 +202,7 @@ define([
         },
 
         send: function(statement) {
-            // don't run asynchronously when terminating as statements may not be executed before browser closes
+            // don't run asynchronously when terminating as statements may not be executed before browser closes - no longer supported by Chrome - look into sendBeacon (in xAPIWrapper)
             if (this._terminate) {
                 this.xAPIWrapper.sendStatement(statement);
             } else {

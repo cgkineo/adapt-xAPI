@@ -216,17 +216,24 @@ define([
         },
 
         _restoreDurationsData: function() {
-            this._restoreDataForState(this.get(DURATIONS_KEY), Adapt.contentObjects);
+            var models = [Adapt.course].concat(Adapt.contentObjects.models);
+
+            this._restoreDataForState(this.get(DURATIONS_KEY), models);
         },
 
-        _restoreDataForState: function(state, collection) {
+        _restoreDataForState: function(state, models) {
             if (state.length > 0) {
                 state.forEach(function(data) {
-                    var model = collection.findWhere({ '_id': data._id });
-                    var restoreData = _.omit(data, '_id');
+                    var model = models.filter(function(model) {
+                        return model.get('_id') === data._id;
+                    })[0];
 
                     // account for models being removed in content without xAPI activityId or registration being changed
-                    if (model) model.set(restoreData);
+                    if (model) {
+                        var restoreData = _.omit(data, '_id');
+
+                        model.set(restoreData);
+                    }
                 });
             }
         },

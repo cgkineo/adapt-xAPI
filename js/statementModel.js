@@ -271,12 +271,15 @@ define([
 
             var model = Adapt.findById(previousId);
 
-            // only record experienced statements for pages
-            if (model.get('_type') !== "page") return;
+            if (model.get('_type') === "page") {
+                // only record experienced statements for pages
+                this.sendExperienced(model);
 
-            this.sendExperienced(model);
+                model.unset('_sessionStartTime', { silent: true });
+            }
 
-            model.unset('_sessionStartTime', { silent: true });
+            // set course duration to ensure State loss is minimised for durations data, if terminate didn't fire
+            this.setModelDuration(Adapt.course);
         },
 
         onContentObjectComplete: function(model) {

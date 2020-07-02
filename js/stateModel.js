@@ -6,6 +6,7 @@ define([
 
     var COMPONENTS_KEY = 'components';
     var DURATIONS_KEY = 'durations';
+    var LOCATION_KEY = 'location';
 
     var StateModel = Backbone.Model.extend({
 
@@ -150,6 +151,14 @@ define([
 
         set: function(id, value) {
             Backbone.Model.prototype.set.apply(this, arguments);
+
+            // delete location if empty - xAPIWrapper returns early from empty values, meaning once a location has been set, it doesn't reset on returning to the menu
+            if (id === LOCATION_KEY && this.has(LOCATION_KEY) && value === "") {
+                this.unset(id, { silent: true });
+                this.delete(id);
+                
+                return;
+            }
 
             // @todo: save every time the value changes, or only on specific events?
             if (this._isLoaded) this.save(id);

@@ -59,6 +59,10 @@ define([
                 'state:change': this.onTrackableStateChange
             });
 
+            this.listenTo(Adapt.course, {
+                'change:_totalDuration': this.onDurationChange
+            });
+
             this.listenTo(Adapt.contentObjects, {
                 'change:_totalDuration': this.onDurationChange
             });

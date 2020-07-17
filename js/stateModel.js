@@ -22,14 +22,15 @@ define([
             _storeQuestionResponses: true
         },
 
+        xAPIWrapper: null,
+        _isInitialized: false,
         _isLoaded: false,
         _isRestored: false,
 
         initialize: function(attributes, options) {
-            this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
-
             this.listenTo(Adapt, {
-                'xapi:languageChangedStateReset': this.onLanguageChangedStateReset,
+                'adapt:initialize': this.onAdaptInitialize,
+                'xapi:languageChanged': this.onLanguageChanged,
                 'xapi:stateReset': this.onStateReset
             });
 
@@ -54,17 +55,20 @@ define([
         },
 
         setupListeners: function() {
-            this.listenTo(Adapt, {
-                // ideally core would trigger this event for each model so we don't have to return early for non-component types
-                'state:change': this.onTrackableStateChange
-            });
-
             this.listenTo(Adapt.course, {
                 'change:_totalDuration': this.onDurationChange
             });
 
             this.listenTo(Adapt.contentObjects, {
                 'change:_totalDuration': this.onDurationChange
+            });
+
+            // don't create new listeners for those which are still valid from initial course load
+            if (this._isInitialized) return;
+
+            this.listenTo(Adapt, {
+                // ideally core would trigger this event for each model so we don't have to return early for non-component types
+                'state:change': this.onTrackableStateChange
             });
         },
 
@@ -116,7 +120,7 @@ define([
 
                         Adapt.trigger('xapi:stateLoaded');
 
-                        scope.listenToOnce(Adapt, 'app:dataReady', scope.onDataReady);
+                        scope.listenTo(Adapt, 'app:dataReady', scope.onDataReady);
                     }
                 });
             }
@@ -125,6 +129,8 @@ define([
         reset: function() {
             var states = this._getStates();
             var scope = this;
+
+            this._isRestored = false;
 
             Adapt.wait.begin();
 
@@ -296,10 +302,14 @@ define([
 
         onAdaptInitialize: function() {
             this.setupListeners();
+
+            this._isInitialized = true;
         },
 
         onDurationChange: function(model) {
-            this._setDurationsData(model);
+            // don't save durations unless data has been restored - ignore any durations being set via experienced statements on models via `onLanguageChange` listeners
+            // @todo: remove and re-apply all listeners to (including those in `initialize`) to prevent the need to use the `_isRestored` condition?
+            if (this._isRestored) this._setDurationsData(model);
         },
 
         onTrackableStateChange: function(model, state) {
@@ -313,12 +323,16 @@ define([
             this.reset();
         },
 
-        // @todo: resetting could go against cmi5 spec, if course was previosuly completed - can't send multiple "cmi.defined" statements for some verbs
-        onLanguageChangedStateReset: function() {
+        // @todo: resetting could go against cmi5 spec, if course was previously completed - can't send multiple "cmi.defined" statements for some verbs
+        onLanguageChanged: function(lang, isStateReset) {
+            if (!isStateReset) return;
+
+            this._isRestored = false;
+
             var states = this._getStates();
 
             var statesToReset = states.filter(function(id) {
-                return id !== DURATIONS_KEY && id !== 'lang';
+                return id !== 'lang';
             });
 
             var scope = this;
@@ -328,12 +342,11 @@ define([
             Async.each(statesToReset, function(id, callback) {
                 scope.delete(id, callback);
             }, function(err) {
-                if (err) {
-                    scope.showErrorNotification();
-                }
+                if (err) scope.showErrorNotification();
 
                 var data = {};
                 data[COMPONENTS_KEY] = [];
+                data[DURATIONS_KEY] = [];
                 scope.set(data, { silent: true });
 
                 Adapt.wait.end();

@@ -18,24 +18,23 @@ define([
 
     var StatementModel = Backbone.Model.extend({
 
-        xAPIWrapper: null,
-
         _tracking: {
             _questionInteractions: true,
             _assessmentsCompletion: false,
             _assessmentCompletion: true
         },
 
+        xAPIWrapper: null,
+        _isInitialized: false,
         _hasLanguageChanged: false,
+        _courseSessionStartTime: null,
+        _currentPageModel: null,
         _terminate: false,
 
         initialize: function(attributes, options) {
-            this.listenToOnce(Adapt, {
-                'adapt:initialize': this.onAdaptInitialize
-            });
-
             this.listenTo(Adapt, {
-                'xapi:languageChanged': this.onLanguageChanged
+                'adapt:initialize': this.onAdaptInitialize,
+                'xapi:languageChanged': this.onLanguageChanged,
             });
 
             this.xAPIWrapper = options.wrapper;
@@ -50,9 +49,6 @@ define([
         },
 
         setupListeners: function() {
-            this._onWindowUnload = _.bind(this.onWindowUnload, this);
-            $(window).on('beforeunload unload', this._onWindowUnload);
-            
             this.listenTo(Adapt.contentObjects, {
                 'change:_isComplete': this.onContentObjectComplete
             });
@@ -60,6 +56,15 @@ define([
             this.listenTo(Adapt.components, {
                 'change:_isComplete': this.onComponentComplete
             });
+
+            // don't create new listeners for those which are still valid from initial course load
+            if (this._isInitialized) return;
+
+            this._onVisibilityChange = _.bind(this.onVisibilityChange, this);
+            $(document).on('visibilitychange', this._onVisibilityChange);
+
+            this._onWindowUnload = _.bind(this.onWindowUnload, this);
+            $(window).on('beforeunload unload', this._onWindowUnload);
 
             this.listenTo(Adapt, {
                 'pageView:ready': this.onPageViewReady,
@@ -139,6 +144,8 @@ define([
             var statement = statementModel.getData(model);
 
             this.send(statement);
+
+            model.unset('_sessionStartTime', { silent: true });
         },
 
         sendQuestionAnswered: function(model) {
@@ -206,7 +213,7 @@ define([
             if (this._terminate) {
                 this.xAPIWrapper.sendStatement(statement);
             } else {
-                this.xAPIWrapper.sendStatement(statement, function(request, obj) {
+                this.xAPIWrapper.sendStatement(statement, _.bind(function(request, obj) {
                     Adapt.log.debug("[" + obj.id + "]: " + request.status + " - " + request.statusText);
 
                     switch (request.status) {
@@ -223,12 +230,26 @@ define([
                             this.showErrorNotification();
                             break;
                     }
-                });
+                }, this));
             }
         },
 
+        setModelSessionStartTime: function(model) {
+            var time = new Date().getTime();
+
+            model.set('_sessionStartTime', time);
+
+            // capture start time for course session as models are reloaded on a language change
+            if (model.get('_type') === "course") this._courseSessionStartTime = time;
+        },
+
         setModelDuration: function(model) {
-            var sessionDuration = new Date().getTime() - model.get('_sessionStartTime');
+            var sessionStartTime = model.get('_sessionStartTime');
+
+            // use stored session start time for reloaded course model following a language change
+            if (!(model.has('_sessionStartTime') && model.get('_type') === "course")) sessionStartTime = this._courseSessionStartTime;
+
+            var sessionDuration = new Date().getTime() - sessionStartTime;
             var totalDuration = (model.get('_totalDuration') || 0) + sessionDuration;
 
             model.set({
@@ -237,49 +258,72 @@ define([
             });
         },
 
-        onLanguageChanged: function(lang) {
+        onLanguageChanged: function(lang, isStateReset) {
             this._hasLanguageChanged = true;
 
-            // send statement if language has changed since the course was started - call in `onAdaptInitialize` is only used initially to ensure correct execution order of statements
-            if (Adapt.get('_isStarted')) this.sendPreferredLanguage();
+            if (Adapt.get('_isStarted')) {
+                if (this._currentPageModel) {
+                    // send experienced statement to ensure statement is sent before preferred language
+                    this.sendExperienced(this._currentPageModel);
+
+                    // reset to bypass call in `onRouterLocation` so experienced statement is not sent
+                    this._currentPageModel = null;
+
+                    //this.setModelDuration(Adapt.course);
+                }
+
+                // send statement if language has changed since the course was started - call in `onAdaptInitialize` is only used initially to ensure correct execution order of statements
+                this.sendPreferredLanguage();
+            }
 
             this.set('lang', lang);
+
+            // reset course session start time if the state has been reset
+            if (isStateReset) this.setModelSessionStartTime(Adapt.course);
         },
 
         onAdaptInitialize: function() {
-            this.sendInitialized();
+            if (!this._isInitialized) {
+                this.setModelSessionStartTime(Adapt.course);
 
-            Adapt.course.set('_sessionStartTime', new Date().getTime());
+                this.sendInitialized();
+
+                // only called on initial launch if the course contains a language picker - call in `onLanguageChanged` is used for subsequent changes within the current browser session
+                if (this._hasLanguageChanged) {
+                    this.sendPreferredLanguage();
+
+                    this._hasLanguageChanged = false;
+                }
+            }
 
             this.setupListeners();
 
-            // only called if course contains a language picker
-            if (this._hasLanguageChanged) this.sendPreferredLanguage();
+            this._isInitialized = true;
         },
 
-        // add into core?
         onPageViewReady: function(view) {
             var model = view.model;
 
-            model.set('_sessionStartTime', new Date().getTime());
+            // store model so we have a reference to existing model following a language change
+            this._currentPageModel = model;
+
+            this.setModelSessionStartTime(model);
         },
 
         onRouterLocation: function() {
             var previousId = Adapt.location._previousId;
 
-            if (!previousId) return;
+            // bypass if no page model or no previous location
+            if (!this._currentPageModel || !previousId) return;
 
             var model = Adapt.findById(previousId);
 
-            if (model.get('_type') === "page") {
+            if (model && model.get('_type') === "page") {
                 // only record experienced statements for pages
                 this.sendExperienced(model);
-
-                model.unset('_sessionStartTime', { silent: true });
             }
 
-            // set course duration to ensure State loss is minimised for durations data, if terminate didn't fire
-            this.setModelDuration(Adapt.course);
+            this._currentPageModel = null;
         },
 
         onContentObjectComplete: function(model) {
@@ -334,6 +378,15 @@ define([
             });
 
            this.sendResourceExperienced(model);
+        },
+
+        onVisibilityChange: function() {
+            // set durations to ensure State loss is minimised for durations data, if terminate didn't fire
+            if (document.visibilityState === "hidden" && !this._terminate) {
+                if (this._currentPageModel) this.setModelDuration(this._currentPageModel);
+
+                this.setModelDuration(Adapt.course);
+            }
         },
 
         onWindowUnload: function() {

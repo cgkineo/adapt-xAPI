@@ -134,13 +134,14 @@ define([
             var languageConfig = Adapt.config.get('_languagePicker');
 
             if (languageConfig && languageConfig._isEnabled && this._restoredLanguage !== lang && this._currentLanguage !== lang) {
-                // @todo: only send when via a user selection? If `"_showOnCourseLoad": false`, this will still be triggered
-                Adapt.trigger('xapi:languageChanged', lang);
+                // only reset if language has changed since the course was started - not neccessary before
+                var resetState = Adapt.get('_isStarted') && !languageConfig._restoreStateOnLanguageChange;
 
-                // only trigger reset if language has changed since the course was started - not neccessary before
-                if (Adapt.get('_isStarted') && !languageConfig._restoreStateOnLanguageChange) Adapt.trigger('xapi:languageChangedStateReset');
+                // @todo: only send when via a user selection? If `"_showOnCourseLoad": false`, this will still be triggered
+                Adapt.trigger('xapi:languageChanged', lang, resetState);
             }
 
+            this._restoredLanguage = null;
             this._currentLanguage = lang;
         },
 

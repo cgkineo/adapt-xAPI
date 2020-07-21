@@ -73,6 +73,9 @@ define([
             var registration = this.get('registration');
             if (registration) context.registration = registration;
 
+            var revision = this.get('revision');
+            if (revision) context.revision = revision;
+
             return context;
         },
 

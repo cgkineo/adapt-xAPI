@@ -6,7 +6,6 @@ define([
 
     var COMPONENTS_KEY = 'components';
     var DURATIONS_KEY = 'durations';
-    var LOCATION_KEY = 'location';
 
     var StateModel = Backbone.Model.extend({
 
@@ -26,6 +25,7 @@ define([
         _isInitialized: false,
         _isLoaded: false,
         _isRestored: false,
+        _queues: {},
 
         initialize: function(attributes, options) {
             this.listenTo(Adapt, {
@@ -77,76 +77,64 @@ define([
         },
 
         load: function() {
-            var activityId = this.get('activityId');
-            var actor = this.get('actor');
-            var registration = this.get('registration');
-            var states = this.xAPIWrapper.getState(activityId, actor, null, registration);
-            
-            if (states === null) {
-                this.showErrorNotification();
-            } else {
-                var scope = this;
+            var scope = this;
 
-                Async.each(states, function(id, callback) {
-                    scope.xAPIWrapper.getState(activityId, actor, id, registration, null, function(request) {
-                        Adapt.log.debug(request.response);
+            this._getStates(function(err, data) {
+                if (err) {
+                    scope.showErrorNotification();
+                } else {
+                    var states = data;
 
-                        switch (request.status) {
-                            case 200:
-                                var state;
-                                var response = request.response;
+                    Async.each(states, function(id, callback) {
+                        scope._fetchState(id, function(err, data) {
+                            if (err) {
+                                scope.showErrorNotification();
+                            } else {
+                                // all data is now saved and retrieved as JSON, so no need for try/catch anymore
+                                scope.set(id, data);
+                            }
 
-                                // account for invalid JSON string?
-                                try {
-                                    state = JSON.parse(response);
-                                } catch(e) {
-                                    state = response;
-                                }
+                            callback();
+                        });
+                    }, function(err) {
+                        if (err) {
+                            scope.showErrorNotification();
+                        } else {
+                            scope._isLoaded = true;
 
-                                scope.set(id, state);
-                                break;
-                            case 404:
-                                Adapt.log.error("Could not find " + id + " in State API.");
-                                break;
+                            Adapt.trigger('xapi:stateLoaded');
+
+                            scope.listenToOnce(Adapt, 'app:dataReady', scope.onDataReady);
                         }
-
-                        callback();
                     });
-                }, function(err) {
-                    if (err) {
-                        scope.showErrorNotification();
-                    } else {
-                        scope._isLoaded = true;
-
-                        Adapt.trigger('xapi:stateLoaded');
-
-                        scope.listenTo(Adapt, 'app:dataReady', scope.onDataReady);
-                    }
-                });
-            }
+                }
+            });
         },
 
         reset: function() {
-            var states = this._getStates();
             var scope = this;
-
-            this._isRestored = false;
-
-            Adapt.wait.begin();
-
-            Async.each(states, function(id, callback) {
-                scope.delete(id, callback);
-            }, function(err) {
+            
+            this._getStates(function(err, data) {
                 if (err) {
                     scope.showErrorNotification();
+                } else {
+                    Adapt.wait.begin();
+
+                    var states = data;
+
+                    Async.each(states, function(id, callback) {
+                        scope.delete(id, callback);
+                    }, function(err) {
+                        if (err) scope.showErrorNotification();
+
+                        var data = {};
+                        data[COMPONENTS_KEY] = [];
+                        data[DURATIONS_KEY] = [];
+                        scope.set(data, { silent: true });
+
+                        Adapt.wait.end();
+                    });
                 }
-
-                var data = {};
-                data[COMPONENTS_KEY] = [];
-                data[DURATIONS_KEY] = [];
-                scope.set(data, { silent: true });
-
-                Adapt.wait.end();
             });
         },
 
@@ -162,63 +150,142 @@ define([
         set: function(id, value) {
             Backbone.Model.prototype.set.apply(this, arguments);
 
-            // delete location if empty - xAPIWrapper returns early from empty values, meaning once a location has been set, it doesn't reset on returning to the menu
-            if (id === LOCATION_KEY && this.has(LOCATION_KEY) && value === "") {
-                this.unset(id, { silent: true });
-                this.delete(id);
-                
-                return;
-            }
-
             // @todo: save every time the value changes, or only on specific events?
-            if (this._isLoaded) this.save(id);
+            if (this._isLoaded) {
+                if (Adapt.terminate) {
+                    this.save(id);
+                } else {
+                    var queue = this._getQueueById(id);
+                    queue.push(id);
+                }
+            }
         },
 
-        save: function(id) {
-            this.xAPIWrapper.sendState(this.get('activityId'), this.get('actor'), id, this.get('registration'), this.get(id), null, null, function(request) {
-                Adapt.log.debug(request.response);
+        save: function(id, callback) {
+            var scope = this;
+            var state = this.get(id);
+            var data = JSON.stringify(state);
 
-                switch (request.status) {
-                    case 204:
-                        // no content
-                        break;
-                    case 401:
-                        // @todo: add a session expired notification?
-                    case 404:
-                        this.showErrorNotification();
-                        break;
-                }
+            fetch(this._getStateURL(id), {
+                keepalive: Adapt.terminate || false,
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": this.xAPIWrapper.lrs.auth,
+                    "X-Experience-API-Version": this.xAPIWrapper.xapiVersion
+                },
+                body: data
+            }).then(function(response) {
+                //if (response) Adapt.log.debug(response);
+
+                if (!response.ok) throw Error(response.statusText);
+
+                if (callback) callback();
+
+                return response;
+            }).catch(function(error) {
+                scope.showErrorNotification();
+
+                if (callback) callback();
             });
         },
 
         delete: function(id, callback) {
             this.unset(id, { silent: true });
 
-            this.xAPIWrapper.deleteState(this.get('activityId'), this.get('actor'), id, this.get('registration'), null, null, function(request) {
-                Adapt.log.debug(request.response);
+            var scope = this;
 
-                switch (request.status) {
-                    case 204:
-                        // no content
-                        break;
-                    case 401:
-                        // @todo: add a session expired notification?
-                    case 404:
-                        this.showErrorNotification();
-                        break;
+            fetch(this._getStateURL(id), {
+                method: "DELETE",
+                headers: {
+                    "Authorization": this.xAPIWrapper.lrs.auth,
+                    "X-Experience-API-Version": this.xAPIWrapper.xapiVersion
                 }
+            }).then(function(response) {
+                if (!response.ok) throw Error(response.statusText);
+
+                if (callback) callback();
+
+                return response;
+            }).catch(function(error) {
+                scope.showErrorNotification();
 
                 if (callback) callback();
             });
         },
 
-        _getStates: function() {
+        _getStateURL: function(stateId) {
             var activityId = this.get('activityId');
-            var actor = this.get('actor');
+            var agent = this.get('actor');
             var registration = this.get('registration');
-            var states = this.xAPIWrapper.getState(activityId, actor, null, registration);
+            var url = this.xAPIWrapper.lrs.endpoint + "activities/state?activityId=" + encodeURIComponent(activityId) + "&agent="+ encodeURIComponent(JSON.stringify(agent));
 
-            return states;
+            if (registration) url += "&registration=" + encodeURIComponent(registration);
+            if (stateId) url += "&stateId=" + encodeURIComponent(stateId);
+            
+            return url;
+        },
+
+        _fetchState: function(stateId, callback) {
+            var scope = this;
+
+            fetch(this._getStateURL(stateId), {
+                //cache: "no-cache",
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": this.xAPIWrapper.lrs.auth,
+                    "X-Experience-API-Version": this.xAPIWrapper.xapiVersion,
+                    "Cache-Control": "no-cache",
+                    "Pragma": "no-cache"
+                }
+            }).then(function(response) {
+                if (!response.ok) throw Error(response.statusText);
+
+                return response.json();
+            }).then(function(data) {
+                //if (data) Adapt.log.debug(data);
+
+                if (callback) callback(null, data);
+            }).catch(function(error) {
+                scope.showErrorNotification();
+
+                if (callback) callback();
+            });
+        },
+
+        _getStates: function(callback) {
+            var scope = this;
+
+            Adapt.wait.begin();
+
+            this._fetchState(null, function(err, data) {
+                if (err) {
+                    scope.showErrorNotification();
+
+                    if (callback) callback(err, null);
+                } else {
+                    if (callback) callback(null, data);
+                }
+
+                Adapt.wait.end();
+            });
+        },
+
+        _getQueueById: function(id) {
+            var queue = this._queues[id];
+
+            if (!queue) {
+                queue = this._queues[id] = Async.queue(_.bind(function(id, callback) {
+                    this.save(id, callback);
+                }, this), 1);
+
+                queue.drain = function() {
+                    Adapt.log.debug("State API queue cleared for " + id);
+                };
+            }
+
+            return queue;
         },
 
         _restoreComponentsData: function() {
@@ -329,29 +396,35 @@ define([
 
             this._isRestored = false;
 
-            var states = this._getStates();
-
-            var statesToReset = states.filter(function(id) {
-                return id !== 'lang';
-            });
-
             var scope = this;
 
-            Adapt.wait.begin();
+            this._getStates(function(err, data) {
+                if (err) {
+                    scope.showErrorNotification();
+                } else {
+                    Adapt.wait.begin();
 
-            Async.each(statesToReset, function(id, callback) {
-                scope.delete(id, callback);
-            }, function(err) {
-                if (err) scope.showErrorNotification();
+                    var states = data;
 
-                var data = {};
-                data[COMPONENTS_KEY] = [];
-                data[DURATIONS_KEY] = [];
-                scope.set(data, { silent: true });
+                    var statesToReset = states.filter(function(id) {
+                        return id !== 'lang';
+                    });
 
-                Adapt.wait.end();
+                    Async.each(statesToReset, function(id, callback) {
+                        scope.delete(id, callback);
+                    }, function(err) {
+                        if (err) scope.showErrorNotification();
+
+                        var data = {};
+                        data[COMPONENTS_KEY] = [];
+                        data[DURATIONS_KEY] = [];
+                        scope.set(data, { silent: true });
+
+                        Adapt.wait.end();
+                    });
+                }
             });
-        },
+        }
 
     });
 

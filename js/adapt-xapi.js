@@ -5,8 +5,9 @@ define([
     './launchModel',
     './statementModel',
     './stateModel',
-    'libraries/url',
-    'libraries/xapiwrapper.min'
+    'libraries/xapiwrapper.min',
+    'libraries/url-polyfill',
+    'libraries/fetch-polyfill'
 ], function(Adapt, OfflineStorage, ErrorNotificationModel, LaunchModel, StatementModel, StateModel) {
 
     var xAPI = Backbone.Controller.extend({
@@ -57,7 +58,7 @@ define([
         initializeStatement: function() {
             var config = {
                 activityId: this.getActivityId(),
-                //registration: this.launchModel.get('registration'),
+                registration: this.launchModel.get('registration'),
                 actor: this.launchModel.get('actor'),
                 contextActivities: this.launchModel.get('contextActivities')
             };

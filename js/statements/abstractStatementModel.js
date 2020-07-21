@@ -9,7 +9,7 @@ define([
             recipeLang: "en",
             lang: "en",
             activityId: null,
-            //registration: null,
+            registration: null,
             actor: null,
             contextActivities: {
                 grouping: []
@@ -18,6 +18,7 @@ define([
 
         getData: function(model) {
             var statement = new ADL.XAPIStatement();
+            statement.id = ADL.ruuid();
             statement.actor = new ADL.XAPIStatement.Agent(this.get('actor'));
             statement.verb = this.getVerb(model);
             statement.object = this.getObject(model);
@@ -68,11 +69,8 @@ define([
                 language: this.get('lang')
             };
 
-            /**
-             * ADL xAPIWrapper adds registration
             var registration = this.get('registration');
             if (registration) context.registration = registration;
-            */
 
             return context;
         },

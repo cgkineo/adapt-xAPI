@@ -208,30 +208,33 @@ define([
             this.send(statement);
         },
 
+        /*
+         * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
+         */
         send: function(statement) {
-            // don't run asynchronously when terminating as statements may not be executed before browser closes - no longer supported by Chrome - look into sendBeacon (in xAPIWrapper)
-            if (this._terminate) {
-                this.xAPIWrapper.sendStatement(statement);
-            } else {
-                this.xAPIWrapper.sendStatement(statement, _.bind(function(request, obj) {
-                    Adapt.log.debug("[" + obj.id + "]: " + request.status + " - " + request.statusText);
+            var lrs = this.xAPIWrapper.lrs;
+            var url = lrs.endpoint + "statements";
+            var data = JSON.stringify(statement);
+            var scope = this;
+            
+            fetch(url, {
+                keepalive: this._terminate,
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": lrs.auth,
+                    "X-Experience-API-Version": this.xAPIWrapper.xapiVersion
+                },
+                body: data
+            }).then(function(response) {
+                Adapt.log.debug("[" + statement.id + "]: " + response.status + " - " + response.statusText);
 
-                    switch (request.status) {
-                        case 200:
-                            // OK
-                            break;
-                        case 400:
-                            // bad request - invalid statement
-                            break;
-                        case 401:
-                            // add a session expired notification?
-                        case 404:
-                            // LRS not found
-                            this.showErrorNotification();
-                            break;
-                    }
-                }, this));
-            }
+                if (!response.ok) throw Error(response.statusText);
+
+                return response;
+            }).catch(function(error) {
+                scope.showErrorNotification();
+            });
         },
 
         setModelSessionStartTime: function(model) {
@@ -393,7 +396,7 @@ define([
             $(window).off('beforeunload unload', this._onWindowUnload);
 
             if (!this._terminate) {
-                this._terminate = true;
+                Adapt.terminate = this._terminate = true;
 
                 var model = Adapt.findById(Adapt.location._currentId);
 

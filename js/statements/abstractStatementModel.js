@@ -10,6 +10,7 @@ define([
             lang: "en",
             activityId: null,
             registration: null,
+            revision: null,
             actor: null,
             contextActivities: {
                 grouping: []

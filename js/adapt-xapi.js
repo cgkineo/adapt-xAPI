@@ -59,6 +59,7 @@ define([
             var config = {
                 activityId: this.getActivityId(),
                 registration: this.launchModel.get('registration'),
+                revision: this._config._revision || null,
                 actor: this.launchModel.get('actor'),
                 contextActivities: this.launchModel.get('contextActivities')
             };

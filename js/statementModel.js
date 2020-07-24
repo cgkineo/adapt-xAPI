@@ -1,7 +1,9 @@
 define([
     'core/js/adapt',
+    'core/js/enums/completionStateEnum',
     './statements/initializedStatementModel',
     './statements/terminatedStatementModel',
+    './statements/preferredLanguageStatementModel',
     './statements/completedStatementModel',
     './statements/experiencedStatementModel',
     './statements/mcqStatementModel',
@@ -12,30 +14,38 @@ define([
     './statements/resourceItemStatementModel',
     './statements/favouriteStatementModel',
     './statements/unfavouriteStatementModel'
-], function(Adapt, InitializedStatementModel, TerminatedStatementModel, CompletedStatementModel, ExperiencedStatementModel, McqStatementModel, SliderStatementModel, TextInputStatementModel, MatchingStatementModel, AssessmentStatementModel, ResourceItemStatementModel, FavouriteStatementModel, UnfavouriteStatementModel) {
+], function(Adapt, COMPLETION_STATE, InitializedStatementModel, TerminatedStatementModel, PreferredLanguageStatementModel, CompletedStatementModel, ExperiencedStatementModel, McqStatementModel, SliderStatementModel, TextInputStatementModel, MatchingStatementModel, AssessmentStatementModel, ResourceItemStatementModel, FavouriteStatementModel, UnfavouriteStatementModel) {
 
     var StatementModel = Backbone.Model.extend({
 
-        defaults: {
-            _shouldRecordInteractions: true,
-            _terminate: false
+        _tracking: {
+            _questionInteractions: true,
+            _assessmentsCompletion: false,
+            _assessmentCompletion: true
         },
 
         xAPIWrapper: null,
+        _isInitialized: false,
+        _hasLanguageChanged: false,
+        _courseSessionStartTime: null,
+        _currentPageModel: null,
+        _terminate: false,
 
         initialize: function(attributes, options) {
-            this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
+            this.listenTo(Adapt, {
+                'adapt:initialize': this.onAdaptInitialize,
+                'xapi:languageChanged': this.onLanguageChanged,
+            });
 
             this.xAPIWrapper = options.wrapper;
+            
+            _.extend(this._tracking, options._tracking);
 
             //this.loadRecipe();
+        },
 
-            this.sendInitialized();
+        loadRecipe: function() {
 
-            Adapt.course.set('_sessionStartTime', new Date().getTime());
-
-            this._onWindowUnload = _.bind(this.onWindowUnload, this);
-            $(window).on('beforeunload unload', this._onWindowUnload);
         },
 
         setupListeners: function() {
@@ -47,22 +57,40 @@ define([
                 'change:_isComplete': this.onComponentComplete
             });
 
+            // don't create new listeners for those which are still valid from initial course load
+            if (this._isInitialized) return;
+
+            this._onVisibilityChange = _.bind(this.onVisibilityChange, this);
+            $(document).on('visibilitychange', this._onVisibilityChange);
+
+            this._onWindowUnload = _.bind(this.onWindowUnload, this);
+            $(window).on('beforeunload unload', this._onWindowUnload);
+
             this.listenTo(Adapt, {
-                'resources:itemClicked': this.onResourceClicked,
                 'pageView:ready': this.onPageViewReady,
                 'router:location': this.onRouterLocation,
-                'assessments:complete': this.onAssessmentsComplete
+                'resources:itemClicked': this.onResourceClicked,
+                'tracking:complete': this.onTrackingComplete
             });
 
-            if (this.get('_shouldRecordInteractions')) {
+            if (this._tracking._questionInteractions) {
                 this.listenTo(Adapt, {
                     'questionView:recordInteraction': this.onQuestionInteraction
                 });
             }
-        },
 
-        loadRecipe: function() {
+            // @todo: if only 1 Adapt.assessment._assessments, override so we never record both statements - leave to config.json for now?
+            if (this._tracking._assessmentsCompletion) {
+                this.listenTo(Adapt, {
+                    'assessments:complete': this.onAssessmentsComplete
+                });
+            }
 
+            if (this._tracking._assessmentCompletion) {
+                this.listenTo(Adapt, {
+                    'assessment:complete': this.onAssessmentComplete
+                });
+            }
         },
 
         showErrorNotification: function() {
@@ -70,23 +98,38 @@ define([
         },
 
         sendInitialized: function() {
-            var config = this.get('_statementConfig');
-            var statementModel = new InitializedStatementModel(this.get('_statementConfig'));
+            var config = this.attributes;
+            var statementModel = new InitializedStatementModel(config);
             var statement = statementModel.getData(Adapt.course);
 
             this.send(statement);
         },
 
         sendTerminated: function() {
-            var config = this.get('_statementConfig');
+            var model = Adapt.course;
+
+            this.setModelDuration(model);
+
+            var config = this.attributes;
             var statementModel = new TerminatedStatementModel(config);
-            var statement = statementModel.getData(Adapt.course);
+            var statement = statementModel.getData(model);
+
+            this.send(statement);
+        },
+
+        sendPreferredLanguage: function() {
+            var config = this.attributes;
+            var statementModel = new PreferredLanguageStatementModel(config);
+            var statement = statementModel.getData(Adapt.course, Adapt.config.get('_activeLanguage'));
 
             this.send(statement);
         },
 
         sendCompleted: function(model) {
-            var config = this.get('_statementConfig');
+            var modelType = model.get('_type');
+            if (modelType === "course" || modelType === "page") this.setModelDuration(model);
+
+            var config = this.attributes;
             var statementModel = new CompletedStatementModel(config);
             var statement = statementModel.getData(model);
 
@@ -94,16 +137,20 @@ define([
         },
 
         sendExperienced: function(model) {
-            var config = this.get('_statementConfig');
+            this.setModelDuration(model);
+
+            var config = this.attributes;
             var statementModel = new ExperiencedStatementModel(config);
             var statement = statementModel.getData(model);
 
             this.send(statement);
+
+            model.unset('_sessionStartTime', { silent: true });
         },
 
-        sendQuestionAnswered: function(view) {
-            var config = this.get('_statementConfig');
-            var questionType = view.model.get('_component');
+        sendQuestionAnswered: function(model) {
+            var config = this.attributes;
+            var questionType = model.get('_component');
             var statementClass;
 
             // better solution than this factory type pattern?
@@ -124,21 +171,21 @@ define([
             }
 
             var statementModel = new statementClass(config);
-            var statement = statementModel.getData(view);
-
-            this.send(statement);
-        },
-
-        sendAssessmentCompleted: function(model) {
-            var config = this.get('_statementConfig');
-            var statementModel = new AssessmentStatementModel(config);
             var statement = statementModel.getData(model);
 
             this.send(statement);
         },
 
+        sendAssessmentCompleted: function(model, state) {
+            var config = this.attributes;
+            var statementModel = new AssessmentStatementModel(config);
+            var statement = statementModel.getData(model, state);
+
+            this.send(statement);
+        },
+
         sendResourceExperienced: function(model) {
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new ResourceItemStatementModel(config);
             var statement = statementModel.getData(model);
 
@@ -146,7 +193,7 @@ define([
         },
 
         sendFavourite: function(model) {
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new FavouriteStatementModel(config);
             var statement = statementModel.getData(model);
 
@@ -154,42 +201,133 @@ define([
         },
 
         sendUnfavourite: function(model) {
-            var config = this.get('_statementConfig');
+            var config = this.attributes;
             var statementModel = new UnfavouriteStatementModel(config);
             var statement = statementModel.getData(model);
 
             this.send(statement);
         },
 
+        /*
+         * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
+         */
         send: function(statement) {
-            // don't run asynchronously when terminating as statements may not be executed before browser closes
-            if (this.get('_terminate')) {
-                this.xAPIWrapper.sendStatement(statement);
-            } else {
-                this.xAPIWrapper.sendStatement(statement, function(request, obj) {
-                    console.log("[" + obj.id + "]: " + request.status + " - " + request.statusText);
+            var lrs = this.xAPIWrapper.lrs;
+            var url = lrs.endpoint + "statements";
+            var data = JSON.stringify(statement);
+            var scope = this;
+            
+            fetch(url, {
+                keepalive: this._terminate,
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": lrs.auth,
+                    "X-Experience-API-Version": this.xAPIWrapper.xapiVersion
+                },
+                body: data
+            }).then(function(response) {
+                Adapt.log.debug("[" + statement.id + "]: " + response.status + " - " + response.statusText);
 
-                    switch (request.status) {
-                        case 200:
-                            // OK
-                            break;
-                        case 400:
-                            // bad request - invalid statement
-                            break;
-                        case 401:
-                            // add a session expired notification?
-                        case 404:
-                            // LRS not found
-                            this.showErrorNotification();
-                            break;
-                    }
-                });
+                if (!response.ok) throw Error(response.statusText);
+
+                return response;
+            }).catch(function(error) {
+                scope.showErrorNotification();
+            });
+        },
+
+        setModelSessionStartTime: function(model) {
+            var time = new Date().getTime();
+
+            model.set('_sessionStartTime', time);
+
+            // capture start time for course session as models are reloaded on a language change
+            if (model.get('_type') === "course") this._courseSessionStartTime = time;
+        },
+
+        setModelDuration: function(model) {
+            var sessionStartTime = model.get('_sessionStartTime');
+
+            // use stored session start time for reloaded course model following a language change
+            if (!(model.has('_sessionStartTime') && model.get('_type') === "course")) sessionStartTime = this._courseSessionStartTime;
+
+            var sessionDuration = new Date().getTime() - sessionStartTime;
+            var totalDuration = (model.get('_totalDuration') || 0) + sessionDuration;
+
+            model.set({
+                '_sessionDuration': sessionDuration,
+                '_totalDuration': totalDuration
+            });
+        },
+
+        onLanguageChanged: function(lang, isStateReset) {
+            this._hasLanguageChanged = true;
+
+            if (Adapt.get('_isStarted')) {
+                if (this._currentPageModel) {
+                    // send experienced statement to ensure statement is sent before preferred language
+                    this.sendExperienced(this._currentPageModel);
+
+                    // reset to bypass call in `onRouterLocation` so experienced statement is not sent
+                    this._currentPageModel = null;
+
+                    //this.setModelDuration(Adapt.course);
+                }
+
+                // send statement if language has changed since the course was started - call in `onAdaptInitialize` is only used initially to ensure correct execution order of statements
+                this.sendPreferredLanguage();
             }
+
+            this.set('lang', lang);
+
+            // reset course session start time if the state has been reset
+            if (isStateReset) this.setModelSessionStartTime(Adapt.course);
         },
 
         onAdaptInitialize: function() {
+            if (!this._isInitialized) {
+                this.setModelSessionStartTime(Adapt.course);
+
+                this.sendInitialized();
+
+                // only called on initial launch if the course contains a language picker - call in `onLanguageChanged` is used for subsequent changes within the current browser session
+                if (this._hasLanguageChanged) {
+                    this.sendPreferredLanguage();
+
+                    this._hasLanguageChanged = false;
+                }
+            }
+
             this.setupListeners();
-        },        
+
+            this._isInitialized = true;
+        },
+
+        onPageViewReady: function(view) {
+            var model = view.model;
+
+            // store model so we have a reference to existing model following a language change
+            this._currentPageModel = model;
+
+            this.setModelSessionStartTime(model);
+        },
+
+        onRouterLocation: function() {
+            var previousId = Adapt.location._previousId;
+
+            // bypass if no page model or no previous location
+            if (!this._currentPageModel || !previousId) return;
+
+            var model = Adapt.findById(previousId);
+
+            if (model && model.get('_type') === "page") {
+                // only record experienced statements for pages
+                this.sendExperienced(model);
+            }
+
+            this._currentPageModel = null;
+        },
 
         onContentObjectComplete: function(model) {
             if (model.get('_isComplete') && !model.get('_isOptional')) {
@@ -205,33 +343,31 @@ define([
 
         onAssessmentsComplete: function(state, model) {
             // defer as triggered before last question triggers questionView:recordInteraction
-            _.defer(_.bind(this.sendAssessmentCompleted, this), model);
+            _.defer(_.bind(this.sendAssessmentCompleted, this), model, state);
+        },
+
+        onAssessmentComplete: function(state) {
+            // create model based on Adapt.course._assessment, otherwise use Adapt.course as base
+            var model;
+            var assessmentConfig = Adapt.course.get('_assessment');
+
+            if (assessmentConfig && assessmentConfig._id && assessmentConfig.title) {
+                model = new Backbone.Model(assessmentConfig);
+            } else {
+                model = Adapt.course;
+            }
+
+            _.defer(_.bind(this.sendAssessmentCompleted, this), model, state);
+        },
+
+        onTrackingComplete: function(completionData) {
+            this.sendCompleted(Adapt.course);
+            
+            // no need to use completionData.assessment due to assessment:complete listener, which isn't restricted to only firing on tracking:complete
         },
 
         onQuestionInteraction: function(view) {
-            this.sendQuestionAnswered(view);
-        },
-
-        // add into core?
-        onPageViewReady: function(view) {
-            var model = view.model;
-
-            model.set('_sessionStartTime', new Date().getTime());
-        },
-
-        onRouterLocation: function() {
-            var previousId = Adapt.location._previousId;
-
-            if (!previousId) return;
-
-            var model = Adapt.findById(previousId);
-
-            // only record experienced statements for pages
-            if (model.get('_type') !== "page") return;
-
-            this.sendExperienced(model);
-
-            model.unset('_sessionStartTime', {silent: true});
+            this.sendQuestionAnswered(view.model);
         },
 
         onResourceClicked: function(data) {
@@ -247,11 +383,20 @@ define([
            this.sendResourceExperienced(model);
         },
 
+        onVisibilityChange: function() {
+            // set durations to ensure State loss is minimised for durations data, if terminate didn't fire
+            if (document.visibilityState === "hidden" && !this._terminate) {
+                if (this._currentPageModel) this.setModelDuration(this._currentPageModel);
+
+                this.setModelDuration(Adapt.course);
+            }
+        },
+
         onWindowUnload: function() {
             $(window).off('beforeunload unload', this._onWindowUnload);
 
-            if (!this.get('_terminate')) {
-                this.set('_terminate', true);
+            if (!this._terminate) {
+                Adapt.terminate = this._terminate = true;
 
                 var model = Adapt.findById(Adapt.location._currentId);
 

@@ -24,19 +24,23 @@ define([
 
 		_getActorData: function() {
 			var actor = this.model.get('actor');
+			var id = this._getIdFromActor(actor);
 
-			// don't think we should make any judgement on name format for firstname or lastname, as there is no standard for this in xAPI
+			/*
+			 * don't think we should make any judgement on name format for firstname or lastname, as there is no standard for this in xAPI
+			 * if actor.name not provided, use id IFI
+			 */
 			return {
-				id: this._getIdFromActor(actor),
-				name: actor.name
+				id: id,
+				name: actor.name || id
 			}
 		},
 
 		_getIdFromActor: function(actor) {
-			var id = actor.account && account.name;			
+			var id = actor.openid;
 			if (id) return id;
 
-			id = actor.openid;
+			id = actor.account && account.name;
 			if (id) return id;
 
 			id = actor.mbox || actor.mbox_sha1sum;

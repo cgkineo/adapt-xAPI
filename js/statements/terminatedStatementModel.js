@@ -1,7 +1,6 @@
 define([
-    'core/js/adapt',
     './abstractStatementModel'
-], function(Adapt, AbstractStatementModel) {
+], function(AbstractStatementModel) {
 
     var TerminatedStatementModel = AbstractStatementModel.extend({
 
@@ -31,7 +30,7 @@ define([
 
         getResult: function(model) {
             var result = {
-                duration: this.getISO8601Duration(model)
+                duration: this.getISO8601Duration(model.get('_sessionDuration'))
             };
 
             return result;

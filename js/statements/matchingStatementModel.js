@@ -1,35 +1,48 @@
 define([
-    'core/js/adapt',
     './questionStatementModel'
-], function(Adapt, QuestionStatementModel) {
+], function(QuestionStatementModel) {
 
     var ITEM_DELIMETER = "[.]";
     var PAIR_DELIMETER = "[,]";
 
     var MatchingStatementModel = QuestionStatementModel.extend({
 
-        getCorrectResponsesPattern: function(model) {
-            var pattern = [];
+        /*
+        getInteractionObject: function(model) {
+            var interactionObject = model.getInteractionObject();
 
-            _.each(model.get('_items'), function(item) {
-                var correctOption = _.findWhere(item._options, {'_isCorrect': true});
-                pattern.push(item.text + ITEM_DELIMETER + correctOption.text)
-            });
+            var definition = {
+                source: this.getSource(interactionObject.source),
+                target: this.getTarget(interactionObject.target),
+                correctResponsesPattern: interactionObject.correctResponsesPattern
+            };
 
-            return [
-                pattern.join(PAIR_DELIMETER)
-            ];
+            return definition;
         },
 
+        getSource: function(sources) {
+            sources.forEach(function(source) {
+                var description = {};
+                description[this.get('lang')] = source.description;
+                source.description = description;
+            }, this);
+
+            return sources;
+        },
+
+        getTarget: function(targets) {
+            targets.forEach(function(target) {
+                var description = {};
+                description[this.get('lang')] = target.description;
+                target.description = description;
+            }, this);
+
+            return targets;
+        },
+        */
+
         getResponse: function(model) {
-            var response = [];
-
-            _.each(model.get('_items'), function(item) {
-                var option = _.findWhere(item._options, {'_isSelected': true});
-                response.push(item.text + ITEM_DELIMETER + option.text)
-            });
-
-            return response.join(PAIR_DELIMETER);
+            return model.getResponse().replace(/\./g, ITEM_DELIMETER).replace(/,|#/g, PAIR_DELIMETER);
         }
 
     });

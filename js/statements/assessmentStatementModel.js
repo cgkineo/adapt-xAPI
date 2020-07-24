@@ -1,19 +1,22 @@
 define([
-    'core/js/adapt',
     './abstractStatementModel'
-], function(Adapt, AbstractStatementModel) {
+], function(AbstractStatementModel) {
 
     var AssessmentStatementModel = AbstractStatementModel.extend({
 
-        getData: function(model) {
-            var statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
-            statement.result = this.getResult(model);
+        getData: function(model, state) {
+            var statement = AbstractStatementModel.prototype.getData.call(this, model);
+            statement.verb = this.getVerb(state);
+            statement.result = this.getResult(state);
 
             return statement;
         },
 
-        getVerb: function(model) {
-            var isPass = model.get('_isPass');
+        getVerb: function(state) {
+            // return if using Backbone.Model from AbstractStatementModel
+            if (state.attributes) return;
+
+            var isPass = state.isPass;
             //var verb = (isPass) ? ADL.verbs.passed : ADL.verbs.failed;
             var verbType = (isPass) ? "passed" : "failed";
 
@@ -31,16 +34,16 @@ define([
             return ADL.activityTypes.assessment;
         },
 
-        getResult: function(model) {
+        getResult: function(state) {
             var result = {
                 score: {
-                    raw: model.get('_score'),
+                    raw: state.score,
                     min: 0,
-                    max: model.get('_maxScore'),
-                    scaled: model.get('_scoreAsPercent') / 100
+                    max: state.maxScore,
+                    scaled: state.scoreAsPercent / 100
                 }/*,
-                success: isPass,
-                completion: model.get('_isComplete')*/
+                success: state.isPass,
+                completion: state.isComplete*/
             };
 
             return result;

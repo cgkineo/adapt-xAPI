@@ -9,7 +9,8 @@ define([
             recipeLang: "en",
             lang: "en",
             activityId: null,
-            //registration: null,
+            registration: null,
+            revision: null,
             actor: null,
             contextActivities: {
                 grouping: []
@@ -18,9 +19,10 @@ define([
 
         getData: function(model) {
             var statement = new ADL.XAPIStatement();
+            statement.id = ADL.ruuid();
             statement.actor = new ADL.XAPIStatement.Agent(this.get('actor'));
             statement.verb = this.getVerb(model);
-            statement.object = this.getObject.apply(this, arguments);
+            statement.object = this.getObject(model);
             statement.context = this.getContext(model);
             statement.timestamp = Utils.getTimestamp();
 
@@ -68,11 +70,11 @@ define([
                 language: this.get('lang')
             };
 
-            /**
-             * ADL xAPIWrapper adds registration
             var registration = this.get('registration');
             if (registration) context.registration = registration;
-            */
+
+            var revision = this.get('revision');
+            if (revision) context.revision = revision;
 
             return context;
         },
@@ -86,29 +88,49 @@ define([
 
         getContextActivitiesGrouping: function(model) {
             var grouping = this.get('contextActivities').grouping.slice();
+
             grouping.push(this.getCourseContextActivity());
 
             var modelType = model.get('_type');
 
             if (modelType && modelType !== "course") {
-                grouping.push(this.getContentObjectContextActivity(model));
+                grouping.push.apply(grouping, this.getContentObjectsContextActivities(model));
             }
 
             return grouping;
         },
 
         getCourseContextActivity: function() {
-            var object = this.getObject(Adapt.course);
+            var object = AbstractStatementModel.prototype.getObject.call(this, Adapt.course);
             object.definition.type = ADL.activityTypes.course;
 
             return object;
+        },
+
+        getContentObjectsContextActivities: function(model) {
+            var contentObjects = model.getAncestorModels(true).filter(function(model) {
+                var modelType = model.get('_type');
+                var isContentObject = modelType === "menu" || modelType === "page";
+
+                if (isContentObject) return model;
+            });
+
+            contentObjects.reverse();
+
+            var activities = [];
+
+            contentObjects.forEach(function(model) {
+                activities.push(this.getContentObjectContextActivity(model));
+            }, this);
+
+            return activities;
         },
 
         getContentObjectContextActivity: function(model) {
             var modelType = model.get('_type');
             var isContentObject = modelType === "menu" || modelType === "page";
             var contentObject = (isContentObject) ? model : model.findAncestor('contentObjects');
-            var object = this.getObject(contentObject);
+            var object = AbstractStatementModel.prototype.getObject.call(this, contentObject);
             object.definition.type = ADL.activityTypes.module;
 
             return object;
@@ -143,9 +165,7 @@ define([
             return extensions;
         },
 
-        getISO8601Duration: function(model) {
-            var milliseconds = new Date().getTime() - model.get('_sessionStartTime');
-
+        getISO8601Duration: function(milliseconds) {
             return Utils.getISO8601Duration(milliseconds);
         }
 

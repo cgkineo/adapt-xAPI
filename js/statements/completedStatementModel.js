@@ -1,10 +1,18 @@
 define([
-    'core/js/adapt',
     './abstractStatementModel'
-], function(Adapt, AbstractStatementModel) {
+], function(AbstractStatementModel) {
 
     var CompletedStatementModel = AbstractStatementModel.extend({
 
+        getData: function(model) {
+            var statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+
+            var modelType = model.get('_type');
+            if (modelType === "course" || modelType === "page") statement.result = this.getResult(model);
+
+            return statement;
+        },
+        
         getVerb: function(model) {
             //return ADL.verbs.completed;
 
@@ -19,9 +27,24 @@ define([
         },
 
         getActivityType: function(model) {
-            var isComponent = model.get('_type') === "component";
+            var modelType = model.get('_type');
 
-            return (isComponent) ? ADL.activityTypes.interaction : ADL.activityTypes.module;
+            switch(modelType) {
+                case "course":
+                    return ADL.activityTypes.course;
+                case "page":
+                    return ADL.activityTypes.module;
+                case "component":
+                    return ADL.activityTypes.interaction;
+            }
+        },
+
+        getResult: function(model) {
+            var result = {
+                duration: this.getISO8601Duration(model.get('_totalDuration'))
+            };
+
+            return result;
         }
 
     });

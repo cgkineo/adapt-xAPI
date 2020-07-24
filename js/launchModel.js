@@ -5,8 +5,8 @@ define([
     var LaunchModel = Backbone.Model.extend({
 
         defaults: {
-            actor: null,
             registration: null,
+            actor: null,
             contextActivities: {
                 grouping: []
             }
@@ -33,8 +33,8 @@ define([
 
                 // capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
                 var launchData = {
-                    'actor': JSON.parse(lrs.actor),
-                    'registration': lrs.registration || null,/*,
+                    'registration': lrs.registration || null,
+                    'actor': JSON.parse(lrs.actor),/*,
                     'contextActivities': launchdata.contextActivities*/
                 };
 
@@ -51,8 +51,6 @@ define([
         },
 
         showErrorNotification: function() {
-            this.listenToOnce(Adapt, 'notify:closed', this.onNotifyClosed);
-
             Adapt.trigger('xapi:launchError');
         },
 
@@ -73,10 +71,12 @@ define([
 
                 // can ADL launch include registration?
                 var launchData = {
-                    'actor': launchdata.actor,
                     'registration': launchdata.registration || null,
-                    'contextActivities': launchdata.contextActivities
+                    'actor': launchdata.actor
                 };
+
+                var contextActivities = launchdata.contextActivities;
+                if (!(_.isEmpty(contextActivities))) launchData.contextActivities = contextActivities;
 
                 this.set(launchData);
 
@@ -115,14 +115,9 @@ define([
         },
 
         onLaunchFail: function() {
-            $('.loading').hide();
+            Adapt.trigger('xapi:launchFailed');
 
             this.showErrorNotification();
-        },
-
-        onNotifyClosed: function() {
-            // launch without xAPI
-            Adapt.trigger('plugin:endWait');
         }
 
     });

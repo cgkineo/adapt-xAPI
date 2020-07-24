@@ -4,7 +4,8 @@ define([
     'libraries/async.min'
 ], function(Adapt, OfflineStorage, Async) {
 
-    var COMPONENT_KEY = 'components';
+    var COMPONENTS_KEY = 'components';
+    var DURATIONS_KEY = 'durations';
 
     var StateModel = Backbone.Model.extend({
 
@@ -12,18 +13,30 @@ define([
             activityId: null,
             actor: null,
             registration: null,
-            components: []
+            components: [],
+            durations: []
         },
 
-        _shouldStoreResponses: false,
+        _tracking: {
+            _storeQuestionResponses: true
+        },
+
+        xAPIWrapper: null,
+        _isInitialized: false,
         _isLoaded: false,
         _isRestored: false,
+        _queues: {},
 
         initialize: function(attributes, options) {
-            this.listenToOnce(Adapt, 'adapt:initialize', this.onAdaptInitialize);
+            this.listenTo(Adapt, {
+                'adapt:initialize': this.onAdaptInitialize,
+                'xapi:languageChanged': this.onLanguageChanged,
+                'xapi:stateReset': this.onStateReset
+            });
 
             this.xAPIWrapper = options.wrapper;
-            this._shouldStoreResponses = options._shouldStoreResponses;
+            
+            _.extend(this._tracking, options._tracking);
 
             this.setOfflineStorageModel();
 
@@ -42,12 +55,21 @@ define([
         },
 
         setupListeners: function() {
-            Adapt.components.models.forEach(function(model) {
-                this.listenTo(model, {
-                    'change:_isSubmitted': this.onSubmittedChange,
-                    'change:_isInteractionComplete': this.onInteractionCompleteChange
-                });
-            }, this);
+            this.listenTo(Adapt.course, {
+                'change:_totalDuration': this.onDurationChange
+            });
+
+            this.listenTo(Adapt.contentObjects, {
+                'change:_totalDuration': this.onDurationChange
+            });
+
+            // don't create new listeners for those which are still valid from initial course load
+            if (this._isInitialized) return;
+
+            this.listenTo(Adapt, {
+                // ideally core would trigger this event for each model so we don't have to return early for non-component types
+                'state:change': this.onTrackableStateChange
+            });
         },
 
         showErrorNotification: function() {
@@ -55,57 +77,70 @@ define([
         },
 
         load: function() {
-            var activityId = this.get('activityId');
-            var actor = this.get('actor');
-            var registration = this.get('registration');
-            var states = this.xAPIWrapper.getState(activityId, actor);
+            var scope = this;
 
-            if (states === null) {
-                this.showErrorNotification();
-            } else {
-                var scope = this;
+            this._getStates(function(err, data) {
+                if (err) {
+                    scope.showErrorNotification();
+                } else {
+                    var states = data;
 
-                Async.each(states, function(id, callback) {
-                    scope.xAPIWrapper.getState(activityId, actor, id, registration, null, function(request) {
-                        console.log(request.response);
+                    Async.each(states, function(id, callback) {
+                        scope._fetchState(id, function(err, data) {
+                            if (err) {
+                                scope.showErrorNotification();
+                            } else {
+                                // all data is now saved and retrieved as JSON, so no need for try/catch anymore
+                                scope.set(id, data);
+                            }
 
-                        switch (request.status) {
-                            case 200:
-                                var state;
-                                var response = request.response;
+                            callback();
+                        });
+                    }, function(err) {
+                        if (err) {
+                            scope.showErrorNotification();
+                        } else {
+                            scope._isLoaded = true;
 
-                                // account for invalid JSON string?
-                                try {
-                                    state = JSON.parse(response);
-                                } catch(e) {
-                                    state = response;
-                                }
+                            Adapt.trigger('xapi:stateLoaded');
 
-                                scope.set(id, state);
-                                break;
-                            case 404:
-                                // state not found
-                                break;
+                            scope.listenToOnce(Adapt, 'app:dataReady', scope.onDataReady);
                         }
-
-                        callback();
                     });
-                }, function(err) {
-                    if (err) {
-                        scope.showErrorNotification();
-                    } else {
-                        scope._isLoaded = true;
+                }
+            });
+        },
 
-                        Adapt.trigger('xapi:stateLoaded');
+        reset: function() {
+            var scope = this;
+            
+            this._getStates(function(err, data) {
+                if (err) {
+                    scope.showErrorNotification();
+                } else {
+                    Adapt.wait.begin();
 
-                        scope.listenToOnce(Adapt, 'app:dataReady', scope.onDataReady);
-                    }
-                });
-            }
+                    var states = data;
+
+                    Async.each(states, function(id, callback) {
+                        scope.delete(id, callback);
+                    }, function(err) {
+                        if (err) scope.showErrorNotification();
+
+                        var data = {};
+                        data[COMPONENTS_KEY] = [];
+                        data[DURATIONS_KEY] = [];
+                        scope.set(data, { silent: true });
+
+                        Adapt.wait.end();
+                    });
+                }
+            });
         },
 
         restore: function() {
-            this._restoreComponentData();
+            this._restoreComponentsData();
+            this._restoreDurationsData();
 
             this._isRestored = true;
 
@@ -115,112 +150,280 @@ define([
         set: function(id, value) {
             Backbone.Model.prototype.set.apply(this, arguments);
 
-            // save everytime the value changes, or only on specific events?
-            if (this._isRestored) this.save(id);
+            // @todo: save every time the value changes, or only on specific events?
+            if (this._isLoaded) {
+                if (Adapt.terminate) {
+                    this.save(id);
+                } else {
+                    var queue = this._getQueueById(id);
+                    queue.push(id);
+                }
+            }
         },
 
-        save: function(id) {
-            this.xAPIWrapper.sendState(this.get('activityId'), this.get('actor'), id, this.get('registration'), this.get(id), null, null, function(request) {
-                console.log(request.response);
+        save: function(id, callback) {
+            var scope = this;
+            var state = this.get(id);
+            var data = JSON.stringify(state);
 
-                switch (request.status) {
-                    case 204:
-                        break;
-                    case 401:
-                        // add a session expired notification?
-                    case 404:
-                        this.showErrorNotification();
-                        break;
-                }
+            fetch(this._getStateURL(id), {
+                keepalive: Adapt.terminate || false,
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": this.xAPIWrapper.lrs.auth,
+                    "X-Experience-API-Version": this.xAPIWrapper.xapiVersion
+                },
+                body: data
+            }).then(function(response) {
+                //if (response) Adapt.log.debug(response);
+
+                if (!response.ok) throw Error(response.statusText);
+
+                if (callback) callback();
+
+                return response;
+            }).catch(function(error) {
+                scope.showErrorNotification();
+
+                if (callback) callback();
             });
         },
 
-        delete: function(id) {
-            this.xAPIWrapper.deleteState(this.get('activityId'), this.get('actor'), id, this.get('registration'), this.get(id), null, function(request) {
-                console.log(request.response);
+        delete: function(id, callback) {
+            this.unset(id, { silent: true });
 
-                switch (request.status) {
-                    case 204:
-                        break;
-                    case 401:
-                        // add a session expired notification?
-                    case 404:
-                        this.showErrorNotification();
-                        break;
+            var scope = this;
+
+            fetch(this._getStateURL(id), {
+                method: "DELETE",
+                headers: {
+                    "Authorization": this.xAPIWrapper.lrs.auth,
+                    "X-Experience-API-Version": this.xAPIWrapper.xapiVersion
                 }
+            }).then(function(response) {
+                if (!response.ok) throw Error(response.statusText);
+
+                if (callback) callback();
+
+                return response;
+            }).catch(function(error) {
+                scope.showErrorNotification();
+
+                if (callback) callback();
             });
         },
 
-        _restoreComponentData: function(data) {
-            var state = this.get(COMPONENT_KEY);
+        _getStateURL: function(stateId) {
+            var activityId = this.get('activityId');
+            var agent = this.get('actor');
+            var registration = this.get('registration');
+            var url = this.xAPIWrapper.lrs.endpoint + "activities/state?activityId=" + encodeURIComponent(activityId) + "&agent="+ encodeURIComponent(JSON.stringify(agent));
 
+            if (registration) url += "&registration=" + encodeURIComponent(registration);
+            if (stateId) url += "&stateId=" + encodeURIComponent(stateId);
+            
+            return url;
+        },
+
+        _fetchState: function(stateId, callback) {
+            var scope = this;
+
+            fetch(this._getStateURL(stateId), {
+                //cache: "no-cache",
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": this.xAPIWrapper.lrs.auth,
+                    "X-Experience-API-Version": this.xAPIWrapper.xapiVersion,
+                    "Cache-Control": "no-cache",
+                    "Pragma": "no-cache"
+                }
+            }).then(function(response) {
+                if (!response.ok) throw Error(response.statusText);
+
+                return response.json();
+            }).then(function(data) {
+                //if (data) Adapt.log.debug(data);
+
+                if (callback) callback(null, data);
+            }).catch(function(error) {
+                scope.showErrorNotification();
+
+                if (callback) callback();
+            });
+        },
+
+        _getStates: function(callback) {
+            var scope = this;
+
+            Adapt.wait.begin();
+
+            this._fetchState(null, function(err, data) {
+                if (err) {
+                    scope.showErrorNotification();
+
+                    if (callback) callback(err, null);
+                } else {
+                    if (callback) callback(null, data);
+                }
+
+                Adapt.wait.end();
+            });
+        },
+
+        _getQueueById: function(id) {
+            var queue = this._queues[id];
+
+            if (!queue) {
+                queue = this._queues[id] = Async.queue(_.bind(function(id, callback) {
+                    this.save(id, callback);
+                }, this), 1);
+
+                queue.drain = function() {
+                    Adapt.log.debug("State API queue cleared for " + id);
+                };
+            }
+
+            return queue;
+        },
+
+        _restoreComponentsData: function() {
+            this._restoreDataForState(this.get(COMPONENTS_KEY), Adapt.components);
+        },
+
+        _restoreDurationsData: function() {
+            var models = [Adapt.course].concat(Adapt.contentObjects.models);
+
+            this._restoreDataForState(this.get(DURATIONS_KEY), models);
+        },
+
+        _restoreDataForState: function(state, models) {
             if (state.length > 0) {
                 state.forEach(function(data) {
-                    var restoreData = _.omit(data, '_id');
-                    var model = Adapt.components.findWhere({ '_id': data._id });
+                    var model = models.filter(function(model) {
+                        return model.get('_id') === data._id;
+                    })[0];
 
-                    // account for models being removed in content without xAPI activityId being changed - should we remove from state?
-                    if (model) model.set(restoreData);
+                    // account for models being removed in content without xAPI activityId or registration being changed
+                    if (model) {
+                        var restoreData = _.omit(data, '_id');
+
+                        model.set(restoreData);
+                    }
                 });
             }
         },
 
-        _setComponentData: function(model) {
-            var stateId = COMPONENT_KEY;
+        _setComponentsData: function(model, data) {
+            var stateId = COMPONENTS_KEY;
             var state = this.get(stateId);
             var modelId = model.get('_id');
-            var modelIndex;
+            var modelIndex = this._getStateModelIndexFor(state, modelId);
 
-            state.forEach(function(sm, index) {
-                if (sm._id === modelId) {
-                    modelIndex = index;
-                    return index;
-                }
-            });
-
-            var data = {
-                _id: modelId,
-                _isInteractionComplete: model.get('_isInteractionComplete'),
-                _isComplete: model.get('_isComplete')
-            };
-
-            if (this._shouldStoreResponses && model.get('_isQuestionType')) {
-                data._userAnswer = model.get('_userAnswer');
-                data._attemptsLeft = model.get('_attemptsLeft');
-                data._isSubmitted = model.get('_isSubmitted');
-                //data._isCorrect = model.get('_isCorrect');
-                //data._score = model.get('_score');
+            // responses won't properly be restored until https://github.com/adaptlearning/adapt_framework/issues/2522 is resolved
+            if (model.get('_isQuestionType') && !this._tracking._storeQuestionResponses) {
+                delete data._isInteractionComplete;
+                delete data._userAnswer;
+                delete data._isSubmitted;
+                delete data._score;
+                delete data._isCorrect;
+                delete data._attemptsLeft;
             }
 
-            (modelIndex === undefined) ? state.push(data) : state[modelIndex] = data;
+            (modelIndex === null) ? state.push(data) : state[modelIndex] = data;
 
             this.set(stateId, state);
         },
 
+        _setDurationsData: function(model) {
+            var stateId = DURATIONS_KEY;
+            var state = this.get(stateId);
+            var modelId = model.get('_id');
+            var modelIndex = this._getStateModelIndexFor(state, modelId);
+
+            var data = {
+                _id: modelId,
+                _totalDuration: model.get('_totalDuration')
+            };
+
+            (modelIndex === null) ? state.push(data) : state[modelIndex] = data;
+
+            this.set(stateId, state);
+        },
+
+        _getStateModelIndexFor: function(state, modelId) {
+            for (var i = 0, l = state.length; i < l; i++) {
+                var stateModel = state[i];
+                if (stateModel._id === modelId) return i;
+            }
+
+            return null;
+        },
+
         onDataReady: function() {
-            Adapt.trigger('plugin:beginWait');
-
-            this.restore();
-
-            Adapt.trigger('plugin:endWait');
-        }, 
+            Adapt.wait.queue(_.bind(function() {
+                this.restore();
+            }, this));
+        },
 
         onAdaptInitialize: function() {
             this.setupListeners();
+
+            this._isInitialized = true;
         },
 
-        onSubmittedChange: function(model) {
-            // _userAnswer changes after _isSubmitted, so wait before amending state
-            // responses still won't properly be restored until https://github.com/adaptlearning/adapt_framework/issues/2522 is resolved
-            this.listenToOnce(model, 'change:_userAnswer', this.onUserAnswerChange);
+        onDurationChange: function(model) {
+            // don't save durations unless data has been restored - ignore any durations being set via experienced statements on models via `onLanguageChange` listeners
+            // @todo: remove and re-apply all listeners to (including those in `initialize`) to prevent the need to use the `_isRestored` condition?
+            if (this._isRestored) this._setDurationsData(model);
         },
 
-        onUserAnswerChange: function(model) {
-            this._setComponentData(model);
+        onTrackableStateChange: function(model, state) {
+            if (model.get('_type') !== 'component') return;
+
+            // don't actually need state._isCorrect and state._score for questions, but save trackable state as provided
+            this._setComponentsData(model, state);
         },
 
-        onInteractionCompleteChange: function(model) {
-            this._setComponentData(model);
+        onStateReset: function() {
+            this.reset();
+        },
+
+        // @todo: resetting could go against cmi5 spec, if course was previously completed - can't send multiple "cmi.defined" statements for some verbs
+        onLanguageChanged: function(lang, isStateReset) {
+            if (!isStateReset) return;
+
+            this._isRestored = false;
+
+            var scope = this;
+
+            this._getStates(function(err, data) {
+                if (err) {
+                    scope.showErrorNotification();
+                } else {
+                    Adapt.wait.begin();
+
+                    var states = data;
+
+                    var statesToReset = states.filter(function(id) {
+                        return id !== 'lang';
+                    });
+
+                    Async.each(statesToReset, function(id, callback) {
+                        scope.delete(id, callback);
+                    }, function(err) {
+                        if (err) scope.showErrorNotification();
+
+                        var data = {};
+                        data[COMPONENTS_KEY] = [];
+                        data[DURATIONS_KEY] = [];
+                        scope.set(data, { silent: true });
+
+                        Adapt.wait.end();
+                    });
+                }
+            });
         }
 
     });

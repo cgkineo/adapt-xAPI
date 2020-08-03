@@ -7,7 +7,8 @@ define([
     './stateModel',
     'libraries/xapiwrapper.min',
     'libraries/url-polyfill',
-    'libraries/fetch-polyfill'
+    'libraries/fetch-polyfill',
+    'libraries/promise-polyfill.min'
 ], function(Adapt, OfflineStorage, ErrorNotificationModel, LaunchModel, StatementModel, StateModel) {
 
     var xAPI = Backbone.Controller.extend({

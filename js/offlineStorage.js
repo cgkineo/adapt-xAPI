@@ -40,7 +40,7 @@ define([
 			var id = actor.openid;
 			if (id) return id;
 
-			id = actor.account && account.name;
+			id = actor.account && actor.account.name;
 			if (id) return id;
 
 			id = actor.mbox || actor.mbox_sha1sum;

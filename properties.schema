@@ -32,7 +32,16 @@
                   "default": "https://example.com/unique_identifier",
                   "inputType": "Text",
                   "validators": [],
-                  "help": "Unique identifier for this xAPI activity."
+                  "help": "Unique identifier for this xAPI activity. Used to populate the Activity id included in _tincan.xml_ and for use in the Statement and State API. The value will be overriden if changed on the hosting environment."
+                },
+                "_revision": {
+                  "type": "string",
+                  "required": false,
+                  "title": "Revision",
+                  "default": "",
+                  "inputType": "Text",
+                  "validators": [],
+                  "help": "This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity id is recommended."
                 },
                 "_tracking": {
                   "type": "object",
@@ -91,7 +100,7 @@
                           "type": "string",
                           "required": true,
                           "title": "Title",
-                          "default": "ADL launch could not be initialized",
+                          "default": "xAPI could not be initialized",
                           "inputType": "Text",
                           "validators": [],
                           "help": ""
@@ -101,6 +110,15 @@
                           "required": true,
                           "title": "Body",
                           "default": "This activity will not be tracked.",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
+                        "_classes": {
+                          "type": "string",
+                          "required": false,
+                          "title": "Classes",
+                          "default": "",
                           "inputType": "Text",
                           "validators": [],
                           "help": ""
@@ -139,6 +157,15 @@
                           "validators": [],
                           "help": ""
                         },
+                        "_classes": {
+                          "type": "string",
+                          "required": false,
+                          "title": "Classes",
+                          "default": "",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
                         "_isCancellable": {
                           "type": "boolean",
                           "required": false,
@@ -169,6 +196,15 @@
                           "required": true,
                           "title": "Body",
                           "default": "An Activity id has not been set. This activity will not be tracked.",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
+                        "_classes": {
+                          "type": "string",
+                          "required": false,
+                          "title": "Classes",
+                          "default": "",
                           "inputType": "Text",
                           "validators": [],
                           "help": ""

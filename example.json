@@ -4,6 +4,7 @@
         "_isEnabled": true,
         "_comment": "included in tincan.xml. _activityId will be overriden if changed on the hosting environment.",
 	    "_activityId": "https://example.com/unique_identifier",
+	    "_revision": "",
         "_tracking": {
             "_storeQuestionResponses": true,
             "_questionInteractions": true,
@@ -12,20 +13,23 @@
         },
         "_errors": {
             "_launch": {
-                "title": "ADL launch could not be initialized",
+                "title": "xAPI could not be initialized",
                 "body": "This activity will not be tracked.",
+                "_classes": "",
                 "_isCancellable": true
             },
             "_lrs": {
                 "title": "LRS could not be found",
                 "body": "There was a problem communicating with the LRS. Tracking data may be lost if you continue with this session.",
+                "_classes": "",
                 "_isCancellable": true
             },
             "_activityId": {
                 "title": "Missing Activity IRI",
                 "body": "An Activity id has not been set. This activity will not be tracked.",
+                "_classes": "",
                 "_isCancellable": true
             }
         }
-	}
+    }
 }

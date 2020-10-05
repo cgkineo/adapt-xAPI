@@ -23,15 +23,17 @@ define([
         initializeLaunch: function() {
             var lrs = ADL.XAPIWrapper.lrs;
 
-            // auth could be sent through in a different process, e.g. OAuth?
-            //if (lrs.endpoint && lrs.auth && lrs.actor) {
-            if (lrs.endpoint && lrs.actor) {
+            /**
+             * can auth be sent through in a different process, e.g. OAuth?
+             * lrs.endpoint && lrs.auth have defaults in the ADL xAPIWrapper, so can't assume their existence means they are the correct credentials - errors will be handled when communicating with the LRS
+             */
+            if (lrs.endpoint && lrs.auth && lrs.actor) {
                 this._xAPIWrapper = ADL.XAPIWrapper;
 
                 // add trailing slash if missing in endpoint
                 lrs.endpoint = lrs.endpoint.replace(/\/?$/, "/");
 
-                // capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
+                // @todo: capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
                 var launchData = {
                     'registration': lrs.registration || null,
                     'actor': JSON.parse(lrs.actor),/*,

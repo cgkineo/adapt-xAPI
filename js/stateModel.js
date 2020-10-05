@@ -289,7 +289,7 @@ define([
         },
 
         _restoreComponentsData: function() {
-            this._restoreDataForState(this.get(COMPONENTS_KEY), Adapt.components);
+            this._restoreDataForState(this.get(COMPONENTS_KEY), Adapt.components.models);
         },
 
         _restoreDurationsData: function() {

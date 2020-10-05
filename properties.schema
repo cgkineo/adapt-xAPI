@@ -91,7 +91,7 @@
                           "type": "string",
                           "required": true,
                           "title": "Title",
-                          "default": "ADL launch could not be initialized",
+                          "default": "xAPI could not be initialized",
                           "inputType": "Text",
                           "validators": [],
                           "help": ""
@@ -101,6 +101,15 @@
                           "required": true,
                           "title": "Body",
                           "default": "This activity will not be tracked.",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
+                        "_classes": {
+                          "type": "string",
+                          "required": false,
+                          "title": "Classes",
+                          "default": "",
                           "inputType": "Text",
                           "validators": [],
                           "help": ""
@@ -139,6 +148,15 @@
                           "validators": [],
                           "help": ""
                         },
+                        "_classes": {
+                          "type": "string",
+                          "required": false,
+                          "title": "Classes",
+                          "default": "",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
                         "_isCancellable": {
                           "type": "boolean",
                           "required": false,
@@ -169,6 +187,15 @@
                           "required": true,
                           "title": "Body",
                           "default": "An Activity id has not been set. This activity will not be tracked.",
+                          "inputType": "Text",
+                          "validators": [],
+                          "help": ""
+                        },
+                        "_classes": {
+                          "type": "string",
+                          "required": false,
+                          "title": "Classes",
+                          "default": "",
                           "inputType": "Text",
                           "validators": [],
                           "help": ""

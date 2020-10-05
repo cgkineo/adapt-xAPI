@@ -2,49 +2,69 @@ define([
     'core/js/adapt'
 ], function(Adapt) {
 
+    var LAUNCH_ERROR_ID = "launch-error";
+    var ACTIVITYID_ERROR_ID = "activityId-error";
+    var LRS_ERROR_ID = "lrs-error";
+
     var ErrorNotificationModel = Backbone.Model.extend({
 
         _isReady: false,
+        _isNotifyOpen: false,
+        _isDeferredLoadingError: false,
+        _currentNotifyId: null,
 
         initialize: function() {
             this.listenToOnce(Adapt, {
-                'app:dataLoaded': this.onDataLoaded,
+                'app:dataLoaded': this.onDataLoaded
+            });
+
+            this.listenTo(Adapt, {
                 'xapi:launchError': this.onShowLaunchError,
                 'xapi:activityIdError': this.onShowActivityIdError,
-                'xapi:lrsError': this.onShowLRSError
+                'xapi:lrsError': this.onShowLRSError,
+                'notify:closed': this.onNotifyClosed
             });
         },
 
-        showNotification: function(config, isDeferred) {
+        _showNotification: function(config, id) {
             if (this._isReady) {
-                var notifyObject = {
-                    _type: 'popup',
-                    title: config.title,
-                    body: config.body
-                };
+                if (!this._isNotifyOpen) {
+                    Adapt.log.error(config.title);
 
-                var isCancellable = true;
+                    var notifyConfig = this._getNotifyConfig(config, id);
 
-                if (config.hasOwnProperty('_isCancellable')) {
-                    isCancellable = config._isCancellable;
-                    notifyObject._isCancellable = isCancellable;
-                    notifyObject._closeOnShadowClick = !isCancellable;
+                    Adapt.trigger('notify:popup', notifyConfig);
+
+                    this._isNotifyOpen = true;
+                    this._currentNotifyId = id;
+
+                } else if (this._currentNotifyId !== id) {
+                    this.listenToOnce(Adapt, 'notify:closed', _.partial(this._showNotification, config, id));
                 }
-    
-                Adapt.log.error(config.title);
-
-                if (isDeferred) {
-                    Adapt.wait.begin();
-
-                    if (isCancellable) this.listenToOnce(Adapt, 'notify:closed', this.onNotifyClosed);
-
-                    $('.loading').hide();
-                }
-    
-                Adapt.trigger('notify:popup', notifyObject);
             } else {
-                this.listenToOnce(Adapt, 'app:dataLoaded', _.partial(this.showNotification, config, true));
+                this._isDeferredLoadingError = true;
+
+                this.listenToOnce(Adapt, 'app:dataLoaded', _.partial(this._showNotification, config, id));
             }
+        },
+
+        _getNotifyConfig: function(config, id) {
+            var notifyConfig = {
+                title: config.title,
+                body: config.body,
+                _classes: "xAPIError " + id + " " + config._classes,
+                _isxAPIError: true
+            };
+
+            var isCancellable = true;
+
+            if (config.hasOwnProperty('_isCancellable')) {
+                isCancellable = config._isCancellable;
+                notifyConfig._isCancellable = isCancellable;
+                notifyConfig._closeOnShadowClick = !isCancellable;
+            }
+
+            return notifyConfig;
         },
 
         /**
@@ -52,22 +72,40 @@ define([
          */
         onDataLoaded: function() {
             this._isReady = true;
+
+            if (this._isDeferredLoadingError) {
+                Adapt.wait.begin();
+
+                $('.loading').hide();
+            }
         },
 
         onShowLaunchError: function() {
-            this.showNotification(this.get('_launch'));
+            this._showNotification(this.get('_launch'), LAUNCH_ERROR_ID);
         },
 
         onShowActivityIdError: function() {
-            this.showNotification(this.get('_activityId'));
+            this._showNotification(this.get('_activityId'), ACTIVITYID_ERROR_ID);
         },
 
         onShowLRSError: function() {
-            this.showNotification(this.get('_lrs'));
+            this._showNotification(this.get('_lrs'), LRS_ERROR_ID);
         },
 
-        onNotifyClosed: function() {
-            Adapt.wait.end();
+        onNotifyClosed: function(notify) {
+            if (!notify.model.get('_isxAPIError')) return;
+
+            if (this._isDeferredLoadingError) {
+                Adapt.wait.end();
+
+                this._isDeferredLoadingError = false;
+
+                // cancel other errors if launch failed and user dismissed, as it won't track regardless
+                this.stopListening();
+            }
+
+            this._isNotifyOpen = false;
+            this._currentNotifyId = null;
         }
 
     });

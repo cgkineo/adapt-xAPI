@@ -1,32 +1,43 @@
-<!--[if IE]><![endif]-->
 <!doctype html>
-<!--[if IE 7 ]><html id="adapt" class="ie ie7 no-js" lang="en"><![endif]-->
-<!--[if IE 8 ]><html id="adapt" class="ie ie8 no-js" lang="en"><![endif]-->
-<!--[if IE 9 ]><html id="adapt" class="ie ie9 no-js" lang="en"><![endif]-->
-<!--[if gt IE 9]><!--><html id="adapt" class="no-js" lang="en"><!--<![endif]-->
+	<html>
 	<head>
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<title></title>
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-		<script src="libraries/jquery.min.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<script type="text/javascript">
-			$.ajax({
-				type: "POST",
-				beforeSend: function(request) {
-					request.setRequestHeader("Content-Type", "application/json");
-					request.setRequestHeader("Authorization", getLauncherAuth());
-				},
-				url: getLauncherURL(),
-				data: getData(),
-				processData: false,
-				success: function(msg) {
-					window.location = 'index.html?xAPILaunchService=' + getLauncherEndpoint() + '&xAPILaunchKey=' + encodeURIComponent(msg.key) + '&activity_id=' + getActivityId() + '&registration=' + getRegistration();
-				}
-			});
+			var xhr = new XMLHttpRequest();
 
-			function generateSessionID() {
-				return Math.random().toString(36).substr(2, 9);
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === XMLHttpRequest.DONE) {
+					if (xhr.status === 200) {
+						onConnectionSuccess(xhr.response);
+					} else {
+						onConnectionError();
+					}
+				}
+			};
+
+			xhr.open("POST", getLauncherURL());
+			xhr.setRequestHeader("Content-Type", "application/json");
+			xhr.setRequestHeader("Authorization", getLauncherAuth());
+			xhr.send(getData());
+
+			function onConnectionSuccess(response) {
+				var data = JSON.parse(response);
+
+				window.location = "index.html?xAPILaunchService=" + getLauncherEndpoint() + "&xAPILaunchKey=" + encodeURIComponent(data.key) + "&activity_id=" + getActivityId() + "&registration=" + getRegistration();
+			}
+
+			function onConnectionError() {
+
+			}
+
+			function generateUUID() {
+				return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+					var r = Math.random() * 16 | 0, v = c == "x" ? r : (r & 0x3 | 0x8);
+					return v.toString(16);
+				});
 			}
 
 			function getLauncherURL() {

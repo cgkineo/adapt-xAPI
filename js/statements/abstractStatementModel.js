@@ -17,13 +17,13 @@ define([
             }
         },
 
-        getData: function(model) {
+        getData: function(model, state) {
             var statement = new ADL.XAPIStatement();
             statement.id = ADL.ruuid();
             statement.actor = new ADL.XAPIStatement.Agent(this.get('actor'));
             statement.verb = this.getVerb(model);
             statement.object = this.getObject(model);
-            statement.context = this.getContext(model);
+            statement.context = this.getContext(model, state);
             statement.timestamp = Utils.getTimestamp();
 
             return statement;
@@ -63,10 +63,10 @@ define([
             return extensions;
         },
 
-        getContext: function(model) {
+        getContext: function(model, state) {
             var context = {
                 contextActivities: this.getContextActivities(model),
-                extensions: this.getContextExtensions(model),
+                extensions: this.getContextExtensions(model, state),
                 language: this.get('lang')
             };
 
@@ -136,6 +136,18 @@ define([
             return object;
         },
 
+        getContextExtensions: function(model, state) {
+            var buildConfig = Adapt.build;
+            var frameworkVersion = (buildConfig) ? buildConfig.get('package').version : "<3.0.0";
+
+            var extensions = {
+                "https://adaptlearning.org/xapi/extension/framework": "Adapt",
+                "https://adaptlearning.org/xapi/extension/framework_version": frameworkVersion
+            };
+
+            return extensions;
+        },
+
         getName: function(model) {
             var name = {};
             name[this.get('lang')] = model.get('title') || model.get('displayTitle');
@@ -151,18 +163,6 @@ define([
             }
 
             return iri; 
-        },
-
-        getContextExtensions: function(model) {
-            var buildConfig = Adapt.build;
-            var frameworkVersion = (buildConfig) ? buildConfig.get('package').version : "<3.0.0";
-
-            var extensions = {
-                "https://adaptlearning.org/xapi/extension/framework": "Adapt",
-                "https://adaptlearning.org/xapi/extension/framework_version": frameworkVersion
-            };
-
-            return extensions;
         },
 
         getISO8601Duration: function(milliseconds) {

@@ -64,7 +64,7 @@ define([
         getInteractionObject: function(model) {
             var interactionObject = model.getInteractionObject();
 
-            for (key in interactionObject) {
+            for (var key in interactionObject) {
                 var interactionActivity = interactionObject[key];
 
                 interactionActivity.forEach(function(activity) {

@@ -5,7 +5,7 @@ define([
     var PreferredLanguageStatementModel = PreferredStatementModel.extend({
 
         getData: function(model, lang) {
-            var statement = PreferredStatementModel.prototype.getData.call(this, model);
+            var statement = PreferredStatementModel.prototype.getData.apply(this, arguments);
 
             statement.result = this.getResult(model, lang);
 

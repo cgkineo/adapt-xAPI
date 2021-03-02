@@ -5,7 +5,7 @@ define([
     var AssessmentStatementModel = AbstractStatementModel.extend({
 
         getData: function(model, state) {
-            var statement = AbstractStatementModel.prototype.getData.call(this, model);
+            var statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
             statement.verb = this.getVerb(state);
             statement.result = this.getResult(state);
 

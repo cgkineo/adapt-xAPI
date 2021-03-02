@@ -35,7 +35,7 @@ define([
             });
 
             this.xAPIWrapper = options.wrapper;
-            
+
             _.extend(this._tracking, options._tracking);
 
             this.setOfflineStorageModel();
@@ -55,6 +55,19 @@ define([
         },
 
         setupListeners: function() {
+            this.setupModelListeners();
+
+            // don't create new listeners for those which are still valid from initial course load
+            if (this._isInitialized) return;
+
+            this.listenTo(Adapt, {
+                'xapi:durationsChange': this.onDurationChange,
+                // ideally core would trigger `state.change` for each model so we don't have to return early for non-component types
+                'state:change': this.onTrackableStateChange
+            });
+        },
+
+        setupModelListeners: function() {
             this.listenTo(Adapt.course, {
                 'change:_totalDuration': this.onDurationChange
             });
@@ -62,13 +75,15 @@ define([
             this.listenTo(Adapt.contentObjects, {
                 'change:_totalDuration': this.onDurationChange
             });
+        },
 
-            // don't create new listeners for those which are still valid from initial course load
-            if (this._isInitialized) return;
+        removeModelListeners: function() {
+            this.stopListening(Adapt.course, {
+                'change:_totalDuration': this.onDurationChange
+            });
 
-            this.listenTo(Adapt, {
-                // ideally core would trigger this event for each model so we don't have to return early for non-component types
-                'state:change': this.onTrackableStateChange
+            this.stopListening(Adapt.contentObjects, {
+                'change:_totalDuration': this.onDurationChange
             });
         },
 
@@ -104,7 +119,7 @@ define([
 
                             Adapt.trigger('xapi:stateLoaded');
 
-                            scope.listenToOnce(Adapt, 'app:dataReady', scope.onDataReady);
+                            scope.listenTo(Adapt, 'app:dataReady', scope.onDataReady);
                         }
                     });
                 }
@@ -113,7 +128,7 @@ define([
 
         reset: function() {
             var scope = this;
-            
+
             this._getStates(function(err, data) {
                 if (err) {
                     scope.showErrorNotification();
@@ -166,6 +181,9 @@ define([
             var state = this.get(id);
             var data = JSON.stringify(state);
 
+            // ensure any data being set is completed before restoring following languageChange
+            if (!this._isRestored) Adapt.wait.begin();
+
             fetch(this._getStateURL(id), {
                 keepalive: Adapt.terminate || false,
                 method: "PUT",
@@ -182,11 +200,15 @@ define([
 
                 if (callback) callback();
 
+                if (!scope._isRestored) Adapt.wait.end();
+
                 return response;
             }).catch(function(error) {
                 scope.showErrorNotification();
 
                 if (callback) callback();
+
+                if (!scope._isRestored) Adapt.wait.end();
             });
         },
 
@@ -222,7 +244,7 @@ define([
 
             if (registration) url += "&registration=" + encodeURIComponent(registration);
             if (stateId) url += "&stateId=" + encodeURIComponent(stateId);
-            
+
             return url;
         },
 
@@ -374,9 +396,7 @@ define([
         },
 
         onDurationChange: function(model) {
-            // don't save durations unless data has been restored - ignore any durations being set via experienced statements on models via `onLanguageChange` listeners
-            // @todo: remove and re-apply all listeners to (including those in `initialize`) to prevent the need to use the `_isRestored` condition?
-            if (this._isRestored) this._setDurationsData(model);
+            this._setDurationsData(model);
         },
 
         onTrackableStateChange: function(model, state) {
@@ -392,9 +412,11 @@ define([
 
         // @todo: resetting could go against cmi5 spec, if course was previously completed - can't send multiple "cmi.defined" statements for some verbs
         onLanguageChanged: function(lang, isStateReset) {
-            if (!isStateReset) return;
+            if (this._isInitialized) this.removeModelListeners();
 
             this._isRestored = false;
+
+            if (!isStateReset) return;
 
             var scope = this;
 

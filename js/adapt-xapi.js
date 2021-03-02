@@ -13,6 +13,7 @@ define([
 
     var xAPI = Backbone.Controller.extend({
 
+        _isInitialized: false,
         _config: null,
         _activityId: null,
         _restoredLanguage: null,
@@ -106,19 +107,20 @@ define([
 
             if (!this._activityId) {
                 this.onLaunchFailed();
-                
+
                 return;
             }
 
             this.listenToOnce(Adapt, {
                 'offlineStorage:ready': this.onOfflineStorageReady,
-                'app:dataLoaded': this.onDataLoaded
+                'app:dataLoaded': this.onDataLoaded,
+                'adapt:initialize': this.onAdaptInitialize
             });
 
             this.listenTo(Adapt, {
                 'app:languageChanged': this.onLanguageChanged
             });
-            
+
             this.initializeState();
             this.initializeStatement();
         },
@@ -138,7 +140,7 @@ define([
 
             if (languageConfig && languageConfig._isEnabled && this._restoredLanguage !== lang && this._currentLanguage !== lang) {
                 // only reset if language has changed since the course was started - not neccessary before
-                var resetState = Adapt.get('_isStarted') && !languageConfig._restoreStateOnLanguageChange;
+                var resetState = this._isInitialized && !languageConfig._restoreStateOnLanguageChange;
 
                 // @todo: only send when via a user selection? If `"_showOnCourseLoad": false`, this will still be triggered
                 Adapt.trigger('xapi:languageChanged', lang, resetState);
@@ -158,6 +160,10 @@ define([
             var globals = Adapt.course.get('_globals');
             if (!globals._learnerInfo) globals._learnerInfo = {};
             globals._learnerInfo = Adapt.offlineStorage.get('learnerinfo');
+        },
+
+        onAdaptInitialize: function() {
+            this._isInitialized = true;
         }
 
     });

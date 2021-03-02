@@ -34,11 +34,11 @@ define([
         initialize: function(attributes, options) {
             this.listenTo(Adapt, {
                 'adapt:initialize': this.onAdaptInitialize,
-                'xapi:languageChanged': this.onLanguageChanged,
+                'xapi:languageChanged': this.onLanguageChanged
             });
 
             this.xAPIWrapper = options.wrapper;
-            
+
             _.extend(this._tracking, options._tracking);
 
             //this.loadRecipe();
@@ -49,13 +49,7 @@ define([
         },
 
         setupListeners: function() {
-            this.listenTo(Adapt.contentObjects, {
-                'change:_isComplete': this.onContentObjectComplete
-            });
-
-            this.listenTo(Adapt.components, {
-                'change:_isComplete': this.onComponentComplete
-            });
+            this.setupModelListeners();
 
             // don't create new listeners for those which are still valid from initial course load
             if (this._isInitialized) return;
@@ -91,6 +85,26 @@ define([
                     'assessment:complete': this.onAssessmentComplete
                 });
             }
+        },
+
+        setupModelListeners: function() {
+            this.listenTo(Adapt.contentObjects, {
+                'change:_isComplete': this.onContentObjectComplete
+            });
+
+            this.listenTo(Adapt.components, {
+                'change:_isComplete': this.onComponentComplete
+            });
+        },
+
+        removeModelListeners: function() {
+            this.stopListening(Adapt.contentObjects, {
+                'change:_isComplete': this.onContentObjectComplete
+            });
+
+            this.stopListening(Adapt.components, {
+                'change:_isComplete': this.onComponentComplete
+            });
         },
 
         showErrorNotification: function() {
@@ -146,6 +160,7 @@ define([
             this.send(statement);
 
             model.unset('_sessionStartTime', { silent: true });
+            model.unset('_sessionDuration', { silent: true });
         },
 
         sendQuestionAnswered: function(model) {
@@ -216,7 +231,7 @@ define([
             var url = lrs.endpoint + "statements";
             var data = JSON.stringify(statement);
             var scope = this;
-            
+
             fetch(url, {
                 keepalive: this._terminate,
                 method: "POST",
@@ -237,8 +252,8 @@ define([
             });
         },
 
-        setModelSessionStartTime: function(model) {
-            var time = new Date().getTime();
+        setModelSessionStartTime: function(model, restoredTime) {
+            var time = restoredTime || new Date().getTime();
 
             model.set('_sessionStartTime', time);
 
@@ -247,33 +262,37 @@ define([
         },
 
         setModelDuration: function(model) {
-            var sessionStartTime = model.get('_sessionStartTime');
+            var elapsedTime = new Date().getTime() - model.get('_sessionStartTime');
 
-            // use stored session start time for reloaded course model following a language change
-            if (!(model.has('_sessionStartTime') && model.get('_type') === "course")) sessionStartTime = this._courseSessionStartTime;
-
-            var sessionDuration = new Date().getTime() - sessionStartTime;
-            var totalDuration = (model.get('_totalDuration') || 0) + sessionDuration;
+            // reset `_sessionStartTime` to prevent cumulative additions via multiple calls to this method within the same session - mostly affects course model
+            this.setModelSessionStartTime(model);
 
             model.set({
-                '_sessionDuration': sessionDuration,
-                '_totalDuration': totalDuration
+                '_sessionDuration': (model.get('_sessionDuration') || 0) + elapsedTime,
+                '_totalDuration': (model.get('_totalDuration') || 0) + elapsedTime
             });
         },
 
         onLanguageChanged: function(lang, isStateReset) {
             this._hasLanguageChanged = true;
 
-            if (Adapt.get('_isStarted')) {
+            if (this._isInitialized) {
+                this.removeModelListeners();
+
                 if (this._currentPageModel) {
+                    // @todo: ideally this would fire before the Adapt collections have reset - not possible in earlier frameworks but might be possible in later by `listenTo('Adapt.data', 'loading')` which fires before reset
                     // send experienced statement to ensure statement is sent before preferred language
                     this.sendExperienced(this._currentPageModel);
 
+                    // due to models reloading `_currentPageModel` is not part of Adapt.contentObjects so the stateModel is not picking up the durations change
+                    Adapt.trigger('xapi:durationsChange', this._currentPageModel);
+
                     // reset to bypass call in `onRouterLocation` so experienced statement is not sent
                     this._currentPageModel = null;
-
-                    //this.setModelDuration(Adapt.course);
                 }
+
+                // restore course session start time
+                if (!isStateReset) this.setModelSessionStartTime(Adapt.course, this._courseSessionStartTime);
 
                 // send statement if language has changed since the course was started - call in `onAdaptInitialize` is only used initially to ensure correct execution order of statements
                 this.sendPreferredLanguage();
@@ -330,6 +349,10 @@ define([
         },
 
         onContentObjectComplete: function(model) {
+            // since Adapt 5.5 the course model is treated as a contentObject - ignore as this is already handled by `onTrackingComplete`
+            if (model.get('_type') === "course") return;
+
+            // @todo: if page contains an assessment which can be reset but the page completes regardless of pass/fail, the `_totalDuration` will increase cumulatively for each attempt - should we reset the duration when reset?
             if (model.get('_isComplete') && !model.get('_isOptional')) {
                 this.sendCompleted(model);
             }
@@ -362,7 +385,7 @@ define([
 
         onTrackingComplete: function(completionData) {
             this.sendCompleted(Adapt.course);
-            
+
             // no need to use completionData.assessment due to assessment:complete listener, which isn't restricted to only firing on tracking:complete
         },
 
@@ -372,7 +395,7 @@ define([
 
         onResourceClicked: function(data) {
             var model = new Backbone.Model();
-            
+
             model.set({
                 '_id': (data.type === 'document') ? data.filename : "?" + data.href,
                 'title': data.title,

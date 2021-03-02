@@ -1,4 +1,4 @@
-# adapt-xapi
+# adapt-xAPI
 An extension to utilise [The Experience API (xAPI)](https://github.com/adlnet/xAPI-Spec/blob/master/xAPI-Data.md#parttwo), to collect data on human performance, stored within a suitable Learning Record Store (LRS).
 
 Whilst the recipe used in this plugin is influenced by [cmi5](https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md), this profile is not currently supported.

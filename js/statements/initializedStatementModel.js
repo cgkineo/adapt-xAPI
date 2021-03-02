@@ -19,6 +19,18 @@ define([
 
         getActivityType: function(model) {
             return ADL.activityTypes.course;
+        },
+
+        getContextExtensions: function(model, state) {
+            var extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
+
+            _.extend(extensions, {
+                "http://id.tincanapi.com/extension/browser-info": {
+                    "user-agent-header": navigator.userAgent.toString()
+                }
+            });
+
+            return extensions;
         }
 
     });

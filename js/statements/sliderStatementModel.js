@@ -1,36 +1,36 @@
 define([
-    './questionStatementModel'
+  './questionStatementModel'
 ], function(QuestionStatementModel) {
 
-    var DELIMETER = "[:]";
+  const DELIMETER = '[:]';
 
-    var SliderStatementModel = QuestionStatementModel.extend({
+  const SliderStatementModel = QuestionStatementModel.extend({
 
-        getInteractionObject: function(model) {
-            var definition = {
-                correctResponsesPattern: this.getCorrectResponsesPattern(model)
-            };
+    getInteractionObject: function(model) {
+      const definition = {
+        correctResponsesPattern: this.getCorrectResponsesPattern(model)
+      };
 
-            return definition;
-        },
+      return definition;
+    },
 
-        getCorrectResponsesPattern: function(model) {
-            var correctAnswer = model.get('_correctAnswer');
-            if (correctAnswer) return [correctAnswer];
+    getCorrectResponsesPattern: function(model) {
+      const correctAnswer = model.get('_correctAnswer');
+      if (correctAnswer) return [correctAnswer];
 
-            var correctRange = model.get('_correctRange');
-            if (correctRange) {
-                var bottom = correctRange._bottom || "";
-                var top = correctRange._top || "";
-                
-                return [
-                    bottom + DELIMETER + top
-                ];
-            }
-        }
+      const correctRange = model.get('_correctRange');
+      if (correctRange) {
+        const bottom = correctRange._bottom || '';
+        const top = correctRange._top || '';
 
-    });
+        return [
+          bottom + DELIMETER + top
+        ];
+      }
+    }
 
-    return SliderStatementModel;
+  });
+
+  return SliderStatementModel;
 
 });

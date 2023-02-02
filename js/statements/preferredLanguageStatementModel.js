@@ -1,31 +1,31 @@
 define([
-    './preferredStatementModel'
+  './preferredStatementModel'
 ], function(PreferredStatementModel) {
 
-    var PreferredLanguageStatementModel = PreferredStatementModel.extend({
+  const PreferredLanguageStatementModel = PreferredStatementModel.extend({
 
-        getData: function(model, lang) {
-            var statement = PreferredStatementModel.prototype.getData.apply(this, arguments);
+    getData: function(model, lang) {
+      const statement = PreferredStatementModel.prototype.getData.apply(this, arguments);
 
-            statement.result = this.getResult(model, lang);
+      statement.result = this.getResult(model, lang);
 
-            return statement;
-        },
+      return statement;
+    },
 
-        getActivityType: function(model) {
-            return ADL.activityTypes.course;
-        },
+    getActivityType: function(model) {
+      return ADL.activityTypes.course;
+    },
 
-        getResult: function(model, lang) {
-            var result = {
-                response: lang
-            };
+    getResult: function(model, lang) {
+      const result = {
+        response: lang
+      };
 
-            return result;
-        }
+      return result;
+    }
 
-    });
+  });
 
-    return PreferredLanguageStatementModel;
+  return PreferredLanguageStatementModel;
 
 });

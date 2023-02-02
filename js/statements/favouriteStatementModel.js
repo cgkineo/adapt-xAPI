@@ -1,26 +1,26 @@
 define([
-    './abstractStatementModel'
+  './abstractStatementModel'
 ], function(AbstractStatementModel) {
 
-    var FavouriteStatementModel = AbstractStatementModel.extend({
+  const FavouriteStatementModel = AbstractStatementModel.extend({
 
-        getVerb: function(model) {
-            var verb = {
-                id: "http://activitystrea.ms/schema/1.0/favorite",
-                display: {}
-            };
+    getVerb: function(model) {
+      const verb = {
+        id: 'http://activitystrea.ms/schema/1.0/favorite',
+        display: {}
+      };
 
-            verb.display[this.get('recipeLang')] = "favorite";
+      verb.display[this.get('recipeLang')] = 'favorite';
 
-            return verb;
-        },
+      return verb;
+    },
 
-        getActivityType: function(model) {
-            return ADL.activityTypes.module;
-        }
+    getActivityType: function(model) {
+      return ADL.activityTypes.module;
+    }
 
-    });
+  });
 
-    return FavouriteStatementModel;
+  return FavouriteStatementModel;
 
 });

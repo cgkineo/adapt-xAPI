@@ -1,56 +1,56 @@
 define([
-    './abstractStatementModel'
+  './abstractStatementModel'
 ], function(AbstractStatementModel) {
 
-    var AssessmentStatementModel = AbstractStatementModel.extend({
+  const AssessmentStatementModel = AbstractStatementModel.extend({
 
-        getData: function(model, state) {
-            var statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
-            statement.verb = this.getVerb(state);
-            statement.result = this.getResult(state);
+    getData: function(model, state) {
+      const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+      statement.verb = this.getVerb(state);
+      statement.result = this.getResult(state);
 
-            return statement;
-        },
+      return statement;
+    },
 
-        getVerb: function(state) {
-            // return if using Backbone.Model from AbstractStatementModel
-            if (state.attributes) return;
+    getVerb: function(state) {
+      // return if using Backbone.Model from AbstractStatementModel
+      if (state.attributes) return;
 
-            var isPass = state.isPass;
-            //var verb = (isPass) ? ADL.verbs.passed : ADL.verbs.failed;
-            var verbType = (isPass) ? "passed" : "failed";
+      const isPass = state.isPass;
+      // var verb = (isPass) ? ADL.verbs.passed : ADL.verbs.failed;
+      const verbType = (isPass) ? 'passed' : 'failed';
 
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/" + verbType,
-                display: {}
-            };
+      const verb = {
+        id: 'http://adlnet.gov/expapi/verbs/' + verbType,
+        display: {}
+      };
 
-            verb.display[this.get('recipeLang')] = verbType;
+      verb.display[this.get('recipeLang')] = verbType;
 
-            return verb;
-        },
+      return verb;
+    },
 
-        getActivityType: function(model) {
-            return ADL.activityTypes.assessment;
-        },
+    getActivityType: function(model) {
+      return ADL.activityTypes.assessment;
+    },
 
-        getResult: function(state) {
-            var result = {
-                score: {
-                    raw: state.score,
-                    min: 0,
-                    max: state.maxScore,
-                    scaled: state.scoreAsPercent / 100
-                }/*,
+    getResult: function(state) {
+      const result = {
+        score: {
+          raw: state.score,
+          min: 0,
+          max: state.maxScore,
+          scaled: state.scoreAsPercent / 100
+        }/*,
                 success: state.isPass,
-                completion: state.isComplete*/
-            };
+                completion: state.isComplete */
+      };
 
-            return result;
-        }
+      return result;
+    }
 
-    });
+  });
 
-    return AssessmentStatementModel;
+  return AssessmentStatementModel;
 
 });

@@ -1,24 +1,24 @@
 define([
-    './abstractStatementModel'
+  './abstractStatementModel'
 ], function(AbstractStatementModel) {
 
-    var PreferredStatementModel = AbstractStatementModel.extend({
+  const PreferredStatementModel = AbstractStatementModel.extend({
 
-        getVerb: function(model) {
-            //return ADL.verbs.preferred;
+    getVerb: function(model) {
+      // return ADL.verbs.preferred;
 
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/preferred",
-                display: {}
-            };
+      const verb = {
+        id: 'http://adlnet.gov/expapi/verbs/preferred',
+        display: {}
+      };
 
-            verb.display[this.get('recipeLang')] = "preferred";
+      verb.display[this.get('recipeLang')] = 'preferred';
 
-            return verb;
-        }
+      return verb;
+    }
 
-    });
+  });
 
-    return PreferredStatementModel;
+  return PreferredStatementModel;
 
 });

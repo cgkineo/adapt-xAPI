@@ -1,43 +1,43 @@
 define([
-    './abstractStatementModel'
+  './abstractStatementModel'
 ], function(AbstractStatementModel) {
 
-    var ExperiencedStatementModel = AbstractStatementModel.extend({
+  const ExperiencedStatementModel = AbstractStatementModel.extend({
 
-        getData: function(model) {
-            var statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
-            statement.result = this.getResult(model);
+    getData: function(model) {
+      const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+      statement.result = this.getResult(model);
 
-            return statement;
-        },
+      return statement;
+    },
 
-        getVerb: function(model) {
-            //return ADL.verbs.experienced;
+    getVerb: function(model) {
+      // return ADL.verbs.experienced;
 
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/experienced",
-                display: {}
-            };
+      const verb = {
+        id: 'http://adlnet.gov/expapi/verbs/experienced',
+        display: {}
+      };
 
-            verb.display[this.get('recipeLang')] = "experienced";
+      verb.display[this.get('recipeLang')] = 'experienced';
 
-            return verb;
-        },
+      return verb;
+    },
 
-        getActivityType: function(model) {
-            return ADL.activityTypes.module;
-        },
+    getActivityType: function(model) {
+      return ADL.activityTypes.module;
+    },
 
-        getResult: function(model) {
-            var result = {
-                duration: this.getISO8601Duration(model.get('_sessionDuration'))
-            };
+    getResult: function(model) {
+      const result = {
+        duration: this.getISO8601Duration(model.get('_sessionDuration'))
+      };
 
-            return result;
-        }
+      return result;
+    }
 
-    });
+  });
 
-    return ExperiencedStatementModel;
+  return ExperiencedStatementModel;
 
 });

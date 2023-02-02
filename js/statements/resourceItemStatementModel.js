@@ -1,53 +1,53 @@
 define([
-    './abstractStatementModel'
+  './abstractStatementModel'
 ], function(AbstractStatementModel) {
 
-    var ResourceItemStatementModel = AbstractStatementModel.extend({
+  const ResourceItemStatementModel = AbstractStatementModel.extend({
 
-        getVerb: function(model) {
-            //return ADL.verbs.experienced;
+    getVerb: function(model) {
+      // return ADL.verbs.experienced;
 
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/experienced",
-                display: {}
-            };
+      const verb = {
+        id: 'http://adlnet.gov/expapi/verbs/experienced',
+        display: {}
+      };
 
-            verb.display[this.get('recipeLang')] = "experienced";
+      verb.display[this.get('recipeLang')] = 'experienced';
 
-            return verb;
-        },
+      return verb;
+    },
 
-        getActivityType: function(model) {
-            return "http://id.tincanapi.com/activitytype/resource";
-        },
+    getActivityType: function(model) {
+      return 'http://id.tincanapi.com/activitytype/resource';
+    },
 
-        getName: function(model) {
-            var name = {};
-            name[this.get('lang')] = model.get('title');
+    getName: function(model) {
+      const name = {};
+      name[this.get('lang')] = model.get('title');
 
-            return name;
-        },
+      return name;
+    },
 
-        getObject: function(model) {
-            var object = AbstractStatementModel.prototype.getObject.apply(this, arguments);
+    getObject: function(model) {
+      const object = AbstractStatementModel.prototype.getObject.apply(this, arguments);
 
-            _.extend(object.definition, {
-                description: this.getDescription(model),
-                moreInfo: model.get('url')
-            });
+      _.extend(object.definition, {
+        description: this.getDescription(model),
+        moreInfo: model.get('url')
+      });
 
-            return object;
-        },
+      return object;
+    },
 
-        getDescription: function(model) {
-            var description = {};
-            description[this.get('lang')] = model.get('description');
+    getDescription: function(model) {
+      const description = {};
+      description[this.get('lang')] = model.get('description');
 
-            return description;
-        }
+      return description;
+    }
 
-    });
+  });
 
-    return ResourceItemStatementModel;
+  return ResourceItemStatementModel;
 
 });

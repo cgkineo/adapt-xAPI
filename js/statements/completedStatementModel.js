@@ -1,54 +1,54 @@
 define([
-    './abstractStatementModel'
+  './abstractStatementModel'
 ], function(AbstractStatementModel) {
 
-    var CompletedStatementModel = AbstractStatementModel.extend({
+  const CompletedStatementModel = AbstractStatementModel.extend({
 
-        getData: function(model) {
-            var statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+    getData: function(model) {
+      const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
 
-            var modelType = model.get('_type');
-            if (modelType === "course" || modelType === "page") statement.result = this.getResult(model);
+      const modelType = model.get('_type');
+      if (modelType === 'course' || modelType === 'page') statement.result = this.getResult(model);
 
-            return statement;
-        },
-        
-        getVerb: function(model) {
-            //return ADL.verbs.completed;
+      return statement;
+    },
 
-            var verb = {
-                id: "http://adlnet.gov/expapi/verbs/completed",
-                display: {}
-            };
+    getVerb: function(model) {
+      // return ADL.verbs.completed;
 
-            verb.display[this.get('recipeLang')] = "completed";
+      const verb = {
+        id: 'http://adlnet.gov/expapi/verbs/completed',
+        display: {}
+      };
 
-            return verb;
-        },
+      verb.display[this.get('recipeLang')] = 'completed';
 
-        getActivityType: function(model) {
-            var modelType = model.get('_type');
+      return verb;
+    },
 
-            switch(modelType) {
-                case "course":
-                    return ADL.activityTypes.course;
-                case "page":
-                    return ADL.activityTypes.module;
-                case "component":
-                    return ADL.activityTypes.interaction;
-            }
-        },
+    getActivityType: function(model) {
+      const modelType = model.get('_type');
 
-        getResult: function(model) {
-            var result = {
-                duration: this.getISO8601Duration(model.get('_totalDuration'))
-            };
+      switch (modelType) {
+        case 'course':
+          return ADL.activityTypes.course;
+        case 'page':
+          return ADL.activityTypes.module;
+        case 'component':
+          return ADL.activityTypes.interaction;
+      }
+    },
 
-            return result;
-        }
+    getResult: function(model) {
+      const result = {
+        duration: this.getISO8601Duration(model.get('_totalDuration'))
+      };
 
-    });
+      return result;
+    }
 
-    return CompletedStatementModel;
+  });
+
+  return CompletedStatementModel;
 
 });

@@ -1,13 +1,13 @@
 define([
-    './questionStatementModel'
+  './questionStatementModel'
 ], function(QuestionStatementModel) {
 
-    var ITEM_DELIMETER = "[.]";
-    var PAIR_DELIMETER = "[,]";
+  const ITEM_DELIMETER = '[.]';
+  const PAIR_DELIMETER = '[,]';
 
-    var MatchingStatementModel = QuestionStatementModel.extend({
+  const MatchingStatementModel = QuestionStatementModel.extend({
 
-        /*
+    /*
         getInteractionObject: function(model) {
             var interactionObject = model.getInteractionObject();
 
@@ -41,12 +41,12 @@ define([
         },
         */
 
-        getResponse: function(model) {
-            return model.getResponse().replace(/\./g, ITEM_DELIMETER).replace(/,|#/g, PAIR_DELIMETER);
-        }
+    getResponse: function(model) {
+      return model.getResponse().replace(/\./g, ITEM_DELIMETER).replace(/,|#/g, PAIR_DELIMETER);
+    }
 
-    });
+  });
 
-    return MatchingStatementModel;
+  return MatchingStatementModel;
 
 });

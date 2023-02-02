@@ -1,15 +1,15 @@
 define([
-    './questionStatementModel'
+  './questionStatementModel'
 ], function(QuestionStatementModel) {
 
-    var DELIMETER = "[,]";
+  const DELIMETER = '[,]';
 
-    var McqStatementModel = QuestionStatementModel.extend({
+  const McqStatementModel = QuestionStatementModel.extend({
 
-        /*
+    /*
         getInteractionObject: function(model) {
             var interactionObject = model.getInteractionObject();
-            
+
             var definition = {
                 choices: this.getChoices(interactionObject.choices),
                 correctResponsesPattern: interactionObject.correctResponsesPattern
@@ -29,12 +29,12 @@ define([
         },
         */
 
-        getResponse: function(model) {
-            return model.getResponse().replace(/,|#/g, DELIMETER);
-        }
+    getResponse: function(model) {
+      return model.getResponse().replace(/,|#/g, DELIMETER);
+    }
 
-    });
+  });
 
-    return McqStatementModel;
+  return McqStatementModel;
 
 });

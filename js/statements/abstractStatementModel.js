@@ -1,176 +1,176 @@
 define([
-    'core/js/adapt',
-    '../utils'
+  'core/js/adapt',
+  '../utils'
 ], function(Adapt, Utils) {
 
-    var AbstractStatementModel = Backbone.Model.extend({
+  var AbstractStatementModel = Backbone.Model.extend({
 
-        defaults: {
-            recipeLang: "en",
-            lang: "en",
-            activityId: null,
-            registration: null,
-            revision: null,
-            actor: null,
-            contextActivities: {
-                grouping: []
-            }
-        },
+    defaults: {
+      recipeLang: 'en',
+      lang: 'en',
+      activityId: null,
+      registration: null,
+      revision: null,
+      actor: null,
+      contextActivities: {
+        grouping: []
+      }
+    },
 
-        getData: function(model, state) {
-            var statement = new ADL.XAPIStatement();
-            statement.id = ADL.ruuid();
-            statement.actor = new ADL.XAPIStatement.Agent(this.get('actor'));
-            statement.verb = this.getVerb(model);
-            statement.object = this.getObject(model);
-            statement.context = this.getContext(model, state);
-            statement.timestamp = Utils.getTimestamp();
+    getData: function(model, state) {
+      const statement = new ADL.XAPIStatement();
+      statement.id = ADL.ruuid();
+      statement.actor = new ADL.XAPIStatement.Agent(this.get('actor'));
+      statement.verb = this.getVerb(model);
+      statement.object = this.getObject(model);
+      statement.context = this.getContext(model, state);
+      statement.timestamp = Utils.getTimestamp();
 
-            return statement;
-        },
+      return statement;
+    },
 
-        getVerb: function(model) {
-            // intentionally empty to be overriden by subclass
-        },
+    getVerb: function(model) {
+      // intentionally empty to be overriden by subclass
+    },
 
-        getActivityType: function(model) {
-            // intentionally empty to be overriden by subclass
-        },
+    getActivityType: function(model) {
+      // intentionally empty to be overriden by subclass
+    },
 
-        getObject: function(model) {
-            var object = new ADL.XAPIStatement.Activity(this.getUniqueIri(model));
+    getObject: function(model) {
+      const object = new ADL.XAPIStatement.Activity(this.getUniqueIri(model));
 
-            var definition = {
-                type: this.getActivityType(model),
-                name: this.getName(model)
-            };
+      const definition = {
+        type: this.getActivityType(model),
+        name: this.getName(model)
+      };
 
-            var extensions = this.getObjectExtensions(model);
+      const extensions = this.getObjectExtensions(model);
 
-            if (!(_.isEmpty(extensions))) definition.extensions = extensions;
+      if (!(_.isEmpty(extensions))) definition.extensions = extensions;
 
-            object.definition = definition;
+      object.definition = definition;
 
-            return object;
-        },
+      return object;
+    },
 
-        getObjectExtensions: function(model) {
-            var extensions = {};
-            var type = model.get('_type');
+    getObjectExtensions: function(model) {
+      const extensions = {};
+      const type = model.get('_type');
 
-            if (type) extensions["https://adaptlearning.org/xapi/extension/model"] = type;
+      if (type) extensions['https://adaptlearning.org/xapi/extension/model'] = type;
 
-            return extensions;
-        },
+      return extensions;
+    },
 
-        getContext: function(model, state) {
-            var context = {
-                contextActivities: this.getContextActivities(model),
-                extensions: this.getContextExtensions(model, state),
-                language: this.get('lang')
-            };
+    getContext: function(model, state) {
+      const context = {
+        contextActivities: this.getContextActivities(model),
+        extensions: this.getContextExtensions(model, state),
+        language: this.get('lang')
+      };
 
-            var registration = this.get('registration');
-            if (registration) context.registration = registration;
+      const registration = this.get('registration');
+      if (registration) context.registration = registration;
 
-            var revision = this.get('revision');
-            if (revision) context.revision = revision;
+      const revision = this.get('revision');
+      if (revision) context.revision = revision;
 
-            return context;
-        },
+      return context;
+    },
 
-        getContextActivities: function(model) {
-            var contextActivities = _.clone(this.get('contextActivities'));
-            contextActivities.grouping = this.getContextActivitiesGrouping(model);
+    getContextActivities: function(model) {
+      const contextActivities = _.clone(this.get('contextActivities'));
+      contextActivities.grouping = this.getContextActivitiesGrouping(model);
 
-            return contextActivities;
-        },
+      return contextActivities;
+    },
 
-        getContextActivitiesGrouping: function(model) {
-            var grouping = this.get('contextActivities').grouping.slice();
+    getContextActivitiesGrouping: function(model) {
+      const grouping = this.get('contextActivities').grouping.slice();
 
-            grouping.push(this.getCourseContextActivity());
+      grouping.push(this.getCourseContextActivity());
 
-            var modelType = model.get('_type');
+      const modelType = model.get('_type');
 
-            if (modelType && modelType !== "course") {
-                grouping.push.apply(grouping, this.getContentObjectsContextActivities(model));
-            }
+      if (modelType && modelType !== 'course') {
+        grouping.push.apply(grouping, this.getContentObjectsContextActivities(model));
+      }
 
-            return grouping;
-        },
+      return grouping;
+    },
 
-        getCourseContextActivity: function() {
-            var object = AbstractStatementModel.prototype.getObject.call(this, Adapt.course);
-            object.definition.type = ADL.activityTypes.course;
+    getCourseContextActivity: function() {
+      const object = AbstractStatementModel.prototype.getObject.call(this, Adapt.course);
+      object.definition.type = ADL.activityTypes.course;
 
-            return object;
-        },
+      return object;
+    },
 
-        getContentObjectsContextActivities: function(model) {
-            var contentObjects = model.getAncestorModels(true).filter(function(model) {
-                var modelType = model.get('_type');
-                var isContentObject = modelType === "menu" || modelType === "page";
+    getContentObjectsContextActivities: function(model) {
+      const contentObjects = model.getAncestorModels(true).filter(function(model) {
+        const modelType = model.get('_type');
+        const isContentObject = modelType === 'menu' || modelType === 'page';
 
-                if (isContentObject) return model;
-            });
+        if (isContentObject) return model;
+      });
 
-            contentObjects.reverse();
+      contentObjects.reverse();
 
-            var activities = [];
+      const activities = [];
 
-            contentObjects.forEach(function(model) {
-                activities.push(this.getContentObjectContextActivity(model));
-            }, this);
+      contentObjects.forEach(function(model) {
+        activities.push(this.getContentObjectContextActivity(model));
+      }, this);
 
-            return activities;
-        },
+      return activities;
+    },
 
-        getContentObjectContextActivity: function(model) {
-            var modelType = model.get('_type');
-            var isContentObject = modelType === "menu" || modelType === "page";
-            var contentObject = (isContentObject) ? model : model.findAncestor('contentObjects');
-            var object = AbstractStatementModel.prototype.getObject.call(this, contentObject);
-            object.definition.type = ADL.activityTypes.module;
+    getContentObjectContextActivity: function(model) {
+      const modelType = model.get('_type');
+      const isContentObject = modelType === 'menu' || modelType === 'page';
+      const contentObject = (isContentObject) ? model : model.findAncestor('contentObjects');
+      const object = AbstractStatementModel.prototype.getObject.call(this, contentObject);
+      object.definition.type = ADL.activityTypes.module;
 
-            return object;
-        },
+      return object;
+    },
 
-        getContextExtensions: function(model, state) {
-            var buildConfig = Adapt.build;
-            var frameworkVersion = (buildConfig) ? buildConfig.get('package').version : "<3.0.0";
+    getContextExtensions: function(model, state) {
+      const buildConfig = Adapt.build;
+      const frameworkVersion = (buildConfig) ? buildConfig.get('package').version : '<3.0.0';
 
-            var extensions = {
-                "https://adaptlearning.org/xapi/extension/framework": "Adapt",
-                "https://adaptlearning.org/xapi/extension/framework_version": frameworkVersion
-            };
+      const extensions = {
+        'https://adaptlearning.org/xapi/extension/framework': 'Adapt',
+        'https://adaptlearning.org/xapi/extension/framework_version': frameworkVersion
+      };
 
-            return extensions;
-        },
+      return extensions;
+    },
 
-        getName: function(model) {
-            var name = {};
-            name[this.get('lang')] = model.get('title') || model.get('displayTitle');
+    getName: function(model) {
+      const name = {};
+      name[this.get('lang')] = model.get('title') || model.get('displayTitle');
 
-            return name;
-        },
+      return name;
+    },
 
-        getUniqueIri: function(model) {
-            var iri = this.get('activityId');
+    getUniqueIri: function(model) {
+      let iri = this.get('activityId');
 
-            if (model && model.get('_type') !== "course") {
-                iri += "/" + model.get('_id');
-            }
+      if (model && model.get('_type') !== 'course') {
+        iri += '/' + model.get('_id');
+      }
 
-            return iri; 
-        },
+      return iri;
+    },
 
-        getISO8601Duration: function(milliseconds) {
-            return Utils.getISO8601Duration(milliseconds);
-        }
+    getISO8601Duration: function(milliseconds) {
+      return Utils.getISO8601Duration(milliseconds);
+    }
 
-    });
+  });
 
-    return AbstractStatementModel;
+  return AbstractStatementModel;
 
 });

@@ -4,9 +4,10 @@
   "framework": ">=3.0.0",
   "homepage": "https://github.com/cgkineo/adapt-xAPI",
   "issues": "https://github.com/cgkineo/adapt-xAPI/issues",
-  "displayName" : "xAPI",
   "extension" : "xapi",
-  "description": "An extension which allows the Experience API (xAPI) to collect data on human performance, stored within a suitable Learning Record Store (LRS).",
+  "targetAttribute": "_xapi",
+  "displayName" : "xAPI",
+  "description": "An extension which allows the Experience API (xAPI) to collect learner data, stored within a suitable Learning Record Store (LRS).",
   "main": "/js/adapt-xapi.js",
   "keywords": [
     "adapt-plugin",
@@ -17,6 +18,5 @@
     "experience api",
     "tracking"
   ],
-  "license": "GPLv3",
-  "targetAttribute": "_xapi"
+  "license": "GPLv3"
 }

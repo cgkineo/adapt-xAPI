@@ -22,13 +22,13 @@
             "_activityId": {
               "type": "string",
               "title": "Activity ID",
-              "description": "Unique identifier for this xAPI activity. Used to populate the Activity id included in _tincan.xml_ and for use in the Statement and State API. The value will be overriden if changed on the hosting environment.",
+              "description": "Unique identifier for this xAPI activity. Used to populate the Activity ID included in _tincan.xml_ and for use in the Statement and State API. The value will be overriden if changed on the hosting environment.",
               "default": "https://example.com/unique_identifier"
             },
             "_revision": {
               "type": "string",
               "title": "Revision",
-              "description": "This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity id is recommended.",
+              "description": "This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity ID is recommended.",
               "default": ""
             },
             "_tracking": {
@@ -85,6 +85,7 @@
                     "_classes": {
                       "type": "string",
                       "title": "Classes",
+                      "description": "List any CSS classes to attach to the notification pop-up.",
                       "default": ""
                     },
                     "_isCancellable": {
@@ -113,6 +114,7 @@
                     "_classes": {
                       "type": "string",
                       "title": "Classes",
+                      "description": "List any CSS classes to attach to the notification pop-up.",
                       "default": ""
                     },
                     "_isCancellable": {
@@ -136,11 +138,12 @@
                     "body": {
                       "type": "string",
                       "title": "Body",
-                      "default": "An Activity id has not been set. This activity will not be tracked."
+                      "default": "An Activity ID has not been set. This activity will not be tracked."
                     },
                     "_classes": {
                       "type": "string",
                       "title": "Classes",
+                      "description": "List any CSS classes to attach to the notification pop-up.",
                       "default": ""
                     },
                     "_isCancellable": {

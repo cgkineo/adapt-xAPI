@@ -1,11 +1,11 @@
 {
   "name": "adapt-xAPI",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "framework": ">=3.0.0",
   "homepage": "https://github.com/cgkineo/adapt-xAPI",
   "issues": "https://github.com/cgkineo/adapt-xAPI/issues",
-  "displayName" : "xAPI",
-  "extension" : "xapi",
+  "displayName": "xAPI",
+  "extension": "xapi",
   "description": "An extension which allows the Experience API (xAPI) to collect data on human performance, stored within a suitable Learning Record Store (LRS).",
   "main": "/js/adapt-xapi.js",
   "keywords": [
@@ -17,6 +17,47 @@
     "experience api",
     "tracking"
   ],
-  "license": "GPLv3",
-  "targetAttribute": "_xapi"
+  "targetAttribute": "_xapi",
+  "license": "GPL-3.0",
+  "private": true,
+  "devDependencies": {
+    "@semantic-release/commit-analyzer": "^9.0.2",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^8.0.5",
+    "@semantic-release/npm": "^9.0.1",
+    "@semantic-release/release-notes-generator": "^10.0.3",
+    "conventional-changelog-eslint": "^3.0.9",
+    "semantic-release": "^19.0.3"
+  },
+  "scripts": {
+    "postversion": "cp package.json bower.json"
+  },
+  "release": {
+    "plugins": [
+      [
+        "@semantic-release/commit-analyzer",
+        {
+          "preset": "eslint"
+        }
+      ],
+      [
+        "@semantic-release/release-notes-generator",
+        {
+          "preset": "eslint"
+        }
+      ],
+      "@semantic-release/npm",
+      "@semantic-release/github",
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "package.json",
+            "bower.json"
+          ],
+          "message": "Chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        }
+      ]
+    ]
+  }
 }

@@ -49,4 +49,4 @@ The granular detail of what is included within each statement and how to analyse
 
 ## Limitations
 - Does not support multiple endpoints for storing data to more than one LRS.
-- Does not currently work alongside [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) due to a conflict with `Adapt.offlineStorage`.
+- Does not currently work alongside [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) due to a conflict with `Adapt.offlineStorage`. 

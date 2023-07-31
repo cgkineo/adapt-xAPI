@@ -121,7 +121,7 @@
                           "default": "",
                           "inputType": "Text",
                           "validators": [],
-                          "help": ""
+                          "help": "List any CSS classes to attach to the notification pop-up."
                         },
                         "_isCancellable": {
                           "type": "boolean",
@@ -164,7 +164,7 @@
                           "default": "",
                           "inputType": "Text",
                           "validators": [],
-                          "help": ""
+                          "help": "List any CSS classes to attach to the notification pop-up."
                         },
                         "_isCancellable": {
                           "type": "boolean",
@@ -207,7 +207,7 @@
                           "default": "",
                           "inputType": "Text",
                           "validators": [],
-                          "help": ""
+                          "help": "List any CSS classes to attach to the notification pop-up."
                         },
                         "_isCancellable": {
                           "type": "boolean",

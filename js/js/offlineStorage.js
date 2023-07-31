@@ -26,10 +26,8 @@ define([
       const actor = this.model.get('actor');
       const id = this._getIdFromActor(actor);
 
-      /*
-			 * don't think we should make any judgement on name format for firstname or lastname, as there is no standard for this in xAPI
-			 * if actor.name not provided, use id IFI
-			 */
+      // I don't think we should make any judgement on name format for firstname or lastname, as there is no standard for this in xAPI
+      // if actor.name not provided, use id IFI
       return {
         id,
         name: actor.name || id

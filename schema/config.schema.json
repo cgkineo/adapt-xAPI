@@ -1,0 +1,164 @@
+{
+  "$anchor": "xAPI-config",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "$patch": {
+    "source": {
+      "$ref": "config"
+    },
+    "with": {
+      "properties": {
+        "_xapi": {
+          "type": "object",
+          "title": "xAPI",
+          "default": {},
+          "properties": {
+            "_isEnabled": {
+              "type": "boolean",
+              "title": "Is Enabled",
+              "description": "If enabled, the course will be tracked by xAPI.",
+              "default": true
+            },
+            "_activityId": {
+              "type": "string",
+              "title": "Activity ID",
+              "description": "Unique identifier for this xAPI activity. Used to populate the Activity ID included in _tincan.xml_ and for use in the Statement and State API. The value will be overriden if changed on the hosting environment.",
+              "default": "https://example.com/unique_identifier"
+            },
+            "_revision": {
+              "type": "string",
+              "title": "Revision",
+              "description": "This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity ID is recommended.",
+              "default": ""
+            },
+            "_tracking": {
+              "type": "object",
+              "title": "Tracking",
+              "default": {},
+              "properties": {
+                "_storeQuestionResponses": {
+                  "type": "boolean",
+                  "title": "Store question responses",
+                  "description": "If enabled, the course will store the user's question responses across sessions.",
+                  "default": true
+                },
+                "_questionInteractions": {
+                  "type": "boolean",
+                  "title": "Record question responses",
+                  "description": "If enabled, the course will send statements recording the user's question responses.",
+                  "default": true
+                },
+                "_assessmentsCompletion": {
+                  "type": "boolean",
+                  "title": "Record assessments completion",
+                  "description": "If enabled, the course will send a statement for each assessment that is completed. Recommended only for courses containing multiple assessments.",
+                  "default": false
+                },
+                "_assessmentCompletion": {
+                  "type": "boolean",
+                  "title": "Record assessment completion",
+                  "description": "If enabled, the course will send a statement when the assessment have been completed. If using multiple assessments, the statement will be sent when all assessments have been completed.",
+                  "default": true
+                }
+              }
+            },
+            "_errors": {
+              "type": "object",
+              "title": "Error Notifications",
+              "default": {},
+              "properties": {
+                "_launch": {
+                  "type": "object",
+                  "title": "Launch",
+                  "default": {},
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "default": "xAPI could not be initialized"
+                    },
+                    "body": {
+                      "type": "string",
+                      "title": "Body",
+                      "default": "This activity will not be tracked."
+                    },
+                    "_classes": {
+                      "type": "string",
+                      "title": "Classes",
+                      "description": "List any CSS classes to attach to the notification pop-up.",
+                      "default": ""
+                    },
+                    "_isCancellable": {
+                      "type": "boolean",
+                      "title": "Cancel notification",
+                      "description": "If enabled, the user can close the notification and continue with an untracked session.",
+                      "default": true
+                    }
+                  }
+                },
+                "_lrs": {
+                  "type": "object",
+                  "title": "LRS",
+                  "default": {},
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "default": "LRS could not be found"
+                    },
+                    "body": {
+                      "type": "string",
+                      "title": "Body",
+                      "default": "There was a problem communicating with the LRS. Tracking data may be lost if you continue with this session."
+                    },
+                    "_classes": {
+                      "type": "string",
+                      "title": "Classes",
+                      "description": "List any CSS classes to attach to the notification pop-up.",
+                      "default": ""
+                    },
+                    "_isCancellable": {
+                      "type": "boolean",
+                      "title": "Cancel notification",
+                      "description": "If enabled, the user can close the notification and continue with an untracked session.",
+                      "default": true
+                    }
+                  }
+                },
+                "_activityId": {
+                  "type": "object",
+                  "title": "LRS",
+                  "default": {},
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "default": "Missing Activity IRI"
+                    },
+                    "body": {
+                      "type": "string",
+                      "title": "Body",
+                      "default": "An Activity ID has not been set. This activity will not be tracked."
+                    },
+                    "_classes": {
+                      "type": "string",
+                      "title": "Classes",
+                      "description": "List any CSS classes to attach to the notification pop-up.",
+                      "default": ""
+                    },
+                    "_isCancellable": {
+                      "type": "boolean",
+                      "title": "Cancel notification",
+                      "description": "If enabled, the user can close the notification and continue with an untracked session.",
+                      "default": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -397,10 +397,10 @@ define([
       const model = new Backbone.Model();
 
       model.set({
-        _id: (data.type === 'document') ? data.filename : '?' + data.href,
+        _id: (data.type === 'document') ? data.filename : '?link=' + data._link,
         title: data.title,
         description: data.description,
-        url: (data.type === 'document') ? data.filename : data.href
+        url: (data.type === 'document') ? data.filename : data._link
       });
 
       this.sendResourceExperienced(model);

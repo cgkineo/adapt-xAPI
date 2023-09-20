@@ -8,13 +8,14 @@ define([
   './statements/experiencedStatementModel',
   './statements/mcqStatementModel',
   './statements/sliderStatementModel',
+  './statements/confidenceSliderStatementModel',
   './statements/textInputStatementModel',
   './statements/matchingStatementModel',
   './statements/assessmentStatementModel',
   './statements/resourceItemStatementModel',
   './statements/favouriteStatementModel',
   './statements/unfavouriteStatementModel'
-], function(Adapt, COMPLETION_STATE, InitializedStatementModel, TerminatedStatementModel, PreferredLanguageStatementModel, CompletedStatementModel, ExperiencedStatementModel, McqStatementModel, SliderStatementModel, TextInputStatementModel, MatchingStatementModel, AssessmentStatementModel, ResourceItemStatementModel, FavouriteStatementModel, UnfavouriteStatementModel) {
+], function(Adapt, COMPLETION_STATE, InitializedStatementModel, TerminatedStatementModel, PreferredLanguageStatementModel, CompletedStatementModel, ExperiencedStatementModel, McqStatementModel, SliderStatementModel, ConfidenceSliderStatementModel, TextInputStatementModel, MatchingStatementModel, AssessmentStatementModel, ResourceItemStatementModel, FavouriteStatementModel, UnfavouriteStatementModel) {
 
   const StatementModel = Backbone.Model.extend({
 
@@ -176,6 +177,9 @@ define([
           break;
         case 'slider':
           statementClass = SliderStatementModel;
+          break;
+        case 'confidenceSlider':
+          statementClass = ConfidenceSliderStatementModel;
           break;
         case 'textinput':
           statementClass = TextInputStatementModel;

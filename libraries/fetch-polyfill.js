@@ -456,7 +456,7 @@
       }
 
       const xhr = new XMLHttpRequest();
-      const isAsync = !(init.keepalive || false);
+      const isAsync = !(init?.keepalive ?? false);
 
       if (isAsync) {
         function abortXhr() {

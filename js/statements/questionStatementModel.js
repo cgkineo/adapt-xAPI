@@ -6,7 +6,7 @@ class QuestionStatementModel extends AbstractStatementModel {
     const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
     statement.result = this.getResult(model);
 
-    return sttement;
+    return statement;
   }
 
   getVerb(model) {

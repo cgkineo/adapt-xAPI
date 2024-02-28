@@ -1,136 +1,120 @@
-define([
-  './abstractStatementModel'
-], function(AbstractStatementModel) {
+import AbstractStatementModel from './abstractStatementModel';
 
-  const QuestionStatementModel = AbstractStatementModel.extend({
+class QuestionStatementModel extends AbstractStatementModel {
 
-    getData: function(model) {
-      const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
-      statement.result = this.getResult(model);
+  getData(model) {
+    const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+    statement.result = this.getResult(model);
 
-      return statement;
-    },
+    return sttement;
+  }
 
-    getVerb: function(model) {
-      // return ADL.verbs.answered;
+  getVerb(model) {
+    const verb = {
+      id: 'http://adlnet.gov/expapi/verbs/answered',
+      display: {}
+    };
 
-      const verb = {
-        id: 'http://adlnet.gov/expapi/verbs/answered',
-        display: {}
-      };
+    verb.display[this.get('recipeLang')] = 'answered';
 
-      verb.display[this.get('recipeLang')] = 'answered';
+    return verb;
+  }
 
-      return verb;
-    },
+  getActivityType(model) {
+    return 'http://adlnet.gov/expapi/activities/cmi.interaction';
+  }
 
-    getActivityType: function(model) {
-      return 'http://adlnet.gov/expapi/activities/cmi.interaction';
-    },
+  getObject(model) {
+    const object = AbstractStatementModel.prototype.getObject.apply(this, arguments);
 
-    getObject: function(model) {
-      const object = AbstractStatementModel.prototype.getObject.apply(this, arguments);
+    const definition = {
+      description: this.getDescription(model),
+      interactionType: model.getResponseType()
+    };
 
-      const definition = {
-        description: this.getDescription(model),
-        interactionType: model.getResponseType()
-      };
+    _.extend(definition, this.getInteractionObject(model));
+    _.extend(object.definition, definition);
 
-      _.extend(definition, this.getInteractionObject(model));
-      _.extend(object.definition, definition);
+    return object;
+  }
 
-      return object;
-    },
+  getDescription(model) {
+    const description = {};
+    description[this.get('lang')] = model.get('body');
 
-    getDescription: function(model) {
-      const description = {};
-      description[this.get('lang')] = model.get('body');
+    return description;
+  }
 
-      return description;
-    },
+  getInteractionObject(model) {
+    const interactionObject = model.getInteractionObject();
 
-    /*
-        getInteractionActivities: function(model) {
-            var activities = {
-                interactionType: model.getResponseType()
-            };
+    for (const key in interactionObject) {
+      const interactionActivity = interactionObject[key];
 
-            _.extend(activities, this.getInteractionObject(model));
-
-            return activities;
-        },
-        */
-
-    getInteractionObject: function(model) {
-      const interactionObject = model.getInteractionObject();
-
-      for (const key in interactionObject) {
-        const interactionActivity = interactionObject[key];
-
-        interactionActivity.forEach(function(activity) {
-          if (activity.hasOwnProperty('description')) {
-            const description = {};
-            description[this.get('lang')] = activity.description;
-            activity.description = description;
-          }
-        }, this);
-      }
-
-      return interactionObject;
-    },
-
-    getObjectExtensions: function(model) {
-      const extensions = AbstractStatementModel.prototype.getObjectExtensions.apply(this, arguments);
-
-      _.extend(extensions, {
-        'https://adaptlearning.org/xapi/extension/component': model.get('_component')
-      });
-
-      return extensions;
-    },
-
-    getContextActivities: function(model) {
-      const contextActivities = AbstractStatementModel.prototype.getContextActivities.apply(this, arguments);
-
-      if (model.get('_isPartOfAssessment')) {
-        contextActivities.parent = [
-          this.getAssessmentContextActivity(model)
-        ];
-      }
-
-      return contextActivities;
-    },
-
-    getAssessmentContextActivity: function(model) {
-      const assessment = model.findAncestor('articles');
-      const object = AbstractStatementModel.prototype.getObject.call(this, assessment);
-      object.definition.type = ADL.activityTypes.assessment;
-
-      return object;
-    },
-
-    getResult: function(model) {
-      const result = {
-        score: {
-          raw: model.get('_score') || 0/*,
-                    min: 0,
-                    max: model.get('_maxScore'),
-                    scaled: model.get('_scoreAsPercent') / 100 */
-        },
-        success: model.get('_isCorrect'),
-        completion: model.get('_isComplete'),
-        response: this.getResponse(model)
-      };
-
-      return result;
-    },
-
-    getResponse: function(model) {
-      return model.getResponse();
+      interactionActivity.forEach(function(activity) {
+        if (activity.hasOwnProperty('description')) {
+          const description = {};
+          description[this.get('lang')] = activity.description;
+          activity.description = description;
+        }
+      }, this);
     }
 
-  });
+    return interactionObject;
+  }
 
-  return QuestionStatementModel;
+  getObjectExtensions(model) {
+    const extensions = AbstractStatementModel.prototype.getObjectExtensions.apply(this, arguments);
 
-});
+    _.extend(extensions, {
+      'https://adaptlearning.org/xapi/extension/component': model.get('_component')
+    });
+
+    return extensions;
+  }
+
+  getContextActivities(model) {
+    const contextActivities = AbstractStatementModel.prototype.getContextActivities.apply(this, arguments);
+
+    if (model.get('_isPartOfAssessment')) {
+      contextActivities.parent = [
+        this.getAssessmentContextActivity(model)
+      ];
+    }
+
+    return contextActivities;
+  }
+
+  getAssessmentContextActivity(model) {
+    const assessment = model.findAncestor('articles');
+    const object = AbstractStatementModel.prototype.getObject.call(this, assessment);
+    object.definition.type = ADL.activityTypes.assessment;
+
+    return object;
+  }
+
+  getResult(model) {
+    const result = {
+      score: {
+        raw: model.get('_score') || 0
+        /*
+          min: 0,
+          max: model.get('_maxScore'),
+          scaled: model.get('_scoreAsPercent') / 100 
+        */
+      },
+      success: model.get('_isCorrect'),
+      completion: model.get('_isComplete'),
+      response: this.getResponse(model)
+    };
+
+    return result;
+  }
+
+  getResponse(model) {
+    return model.getResponse();
+  }
+  
+}
+
+export default QuestionStatementModel;

@@ -1,43 +1,38 @@
-define([
-  './abstractStatementModel'
-], function(AbstractStatementModel) {
+import AbstractStatementModel from './abstractStatementModel';
 
-  const TerminatedStatementModel = AbstractStatementModel.extend({
+class TerminatedStatementModel extends AbstractStatementModel {
 
-    getData: function(model) {
-      const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
-      statement.result = this.getResult(model);
+  getData(model) {
+    const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+    statement.result = this.getResult(model);
 
-      return statement;
-    },
+    return statement;
+  }
 
-    getVerb: function(model) {
-      // return ADL.verbs.terminated;
+  getVerb(model) {
+    
+    const verb = {
+      id: 'http://adlnet.gov/expapi/verbs/terminated',
+      display: {}
+    };
 
-      const verb = {
-        id: 'http://adlnet.gov/expapi/verbs/terminated',
-        display: {}
-      };
+    verb.display[this.get('recipeLang')] = 'terminated';
 
-      verb.display[this.get('recipeLang')] = 'terminated';
+    return verb;
+  }
 
-      return verb;
-    },
+  getActivityType(model) {
+    return ADL.activityTypes.course;
+  }
 
-    getActivityType: function(model) {
-      return ADL.activityTypes.course;
-    },
+  getResult(model) {
+    const result = {
+      duration: this.getISO8601Duration(model.get('_sessionDuration'))
+    };
 
-    getResult: function(model) {
-      const result = {
-        duration: this.getISO8601Duration(model.get('_sessionDuration'))
-      };
+    return result;
+  }
 
-      return result;
-    }
+}
 
-  });
-
-  return TerminatedStatementModel;
-
-});
+export default TerminatedStatementModel;

@@ -1,34 +1,53 @@
 import AbstractStatementModel from './abstractStatementModel';
 
-class InitializedStatementModel extends AbstractStatementModel {
+class AssessmentStatementModel extends AbstractStatementModel {
 
-  getVerb(model) {
+  getData(model, state) {
+    const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+    statement.verb = this.getVerb(state);
+    statement.result = this.getResult(state);
+
+    return statement;
+  }
+
+  getVerb(state) {
+    // return if using Backbone.Model from AbstractStatementModel
+    if (state.attributes) return;
+
+    const isPass = state.isPass;
+    // var verb = (isPass) ? ADL.verbs.passed : ADL.verbs.failed;
+    const verbType = (isPass) ? 'passed' : 'failed';
+
     const verb = {
-      id: 'http://adlnet.gov/expapi/verbs/initialized',
+      id: 'http://adlnet.gov/expapi/verbs/' + verbType,
       display: {}
     };
 
-    verb.display[this.get('recipeLang')] = 'initialized';
+    verb.display[this.get('recipeLang')] = verbType;
 
     return verb;
   }
 
   getActivityType(model) {
-    return ADL.activityTypes.course;
+    return ADL.activityTypes.assessment;
   }
 
-  getContextExtensions(model, state) {
-    const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
-
-    _.extend(extensions, {
-      'http://id.tincanapi.com/extension/browser-info': {
-        'user-agent-header': navigator.userAgent.toString()
+  getResult(state) {
+    const result = {
+      score: {
+        raw: state.score,
+        min: 0,
+        max: state.maxScore,
+        scaled: state.scoreAsPercent / 100
       }
-    });
+      /*
+        success: state.isPass,
+        completion: state.isComplete 
+      */
+    };
 
-    return extensions;
+    return result;
   }
-
 }
 
-export default InitializedStatementModel;
+export default AssessmentStatementModel;

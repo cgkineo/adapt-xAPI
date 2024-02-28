@@ -1,40 +1,34 @@
-define([
-  './questionStatementModel'
-], function(QuestionStatementModel) {
+import QuestionStatementModel from './questionStatementModel';
 
-  const DELIMETER = '[,]';
+class McqStatementModel extends QuestionStatementModel {
 
-  const McqStatementModel = QuestionStatementModel.extend({
+  /*
+    getInteractionObject(model) {
+      var interactionObject = model.getInteractionObject();
 
-    /*
-        getInteractionObject: function(model) {
-            var interactionObject = model.getInteractionObject();
+      var definition = {
+        choices: this.getChoices(interactionObject.choices),
+        correctResponsesPattern: interactionObject.correctResponsesPattern
+      };
 
-            var definition = {
-                choices: this.getChoices(interactionObject.choices),
-                correctResponsesPattern: interactionObject.correctResponsesPattern
-            };
-
-            return definition;
-        },
-
-        getChoices: function(choices) {
-            choices.forEach(function(choice) {
-                var description = {};
-                description[this.get('lang')] = choice.description;
-                choice.description = description;
-            }, this);
-
-            return choices;
-        },
-        */
-
-    getResponse: function(model) {
-      return model.getResponse().replace(/,|#/g, DELIMETER);
+      return definition;
     }
 
-  });
+    getChoices(choices) {
+      choices.forEach(function(choice) {
+        var description = {};
+        description[this.get('lang')] = choice.description;
+        choice.description = description;
+      }, this);
 
-  return McqStatementModel;
+      return choices;
+    }
+  */
 
-});
+  getResponse(model) {
+    return model.getResponse().replace(/,|#/g, DELIMETER);
+  }
+  
+}
+
+export default McqStatementModel;

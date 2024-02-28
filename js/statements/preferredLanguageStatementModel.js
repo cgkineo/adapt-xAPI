@@ -1,31 +1,26 @@
-define([
-  './preferredStatementModel'
-], function(PreferredStatementModel) {
+import PreferredStatementModel from './preferredStatementModel';
 
-  const PreferredLanguageStatementModel = PreferredStatementModel.extend({
+class PreferredLanguageStatementModel extends PreferredStatementModel {
 
-    getData: function(model, lang) {
-      const statement = PreferredStatementModel.prototype.getData.apply(this, arguments);
+  getData(model, lang) {
+    const statement = PreferredStatementModel.prototype.getData.apply(this, arguments);
 
-      statement.result = this.getResult(model, lang);
+    statement.result = this.getResult(model, lang);
 
-      return statement;
-    },
+    return statement;
+  }
 
-    getActivityType: function(model) {
-      return ADL.activityTypes.course;
-    },
+  getActivityType(model) {
+    return ADL.activityTypes.course;
+  }
 
-    getResult: function(model, lang) {
-      const result = {
-        response: lang
-      };
+  getResult(model, lang) {
+    const result = {
+      response: lang
+    };
 
-      return result;
-    }
+    return result;
+  }
+}
 
-  });
-
-  return PreferredLanguageStatementModel;
-
-});
+export default PreferredLanguageStatementModel;

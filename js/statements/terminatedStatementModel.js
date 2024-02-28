@@ -10,7 +10,6 @@ class TerminatedStatementModel extends AbstractStatementModel {
   }
 
   getVerb(model) {
-    
     const verb = {
       id: 'http://adlnet.gov/expapi/verbs/terminated',
       display: {}

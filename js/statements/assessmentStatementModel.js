@@ -1,56 +1,34 @@
-define([
-  './abstractStatementModel'
-], function(AbstractStatementModel) {
+import AbstractStatementModel from './abstractStatementModel';
 
-  const AssessmentStatementModel = AbstractStatementModel.extend({
+class InitializedStatementModel extends AbstractStatementModel {
 
-    getData: function(model, state) {
-      const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
-      statement.verb = this.getVerb(state);
-      statement.result = this.getResult(state);
+  getVerb(model) {
+    const verb = {
+      id: 'http://adlnet.gov/expapi/verbs/initialized',
+      display: {}
+    };
 
-      return statement;
-    },
+    verb.display[this.get('recipeLang')] = 'initialized';
 
-    getVerb: function(state) {
-      // return if using Backbone.Model from AbstractStatementModel
-      if (state.attributes) return;
+    return verb;
+  }
 
-      const isPass = state.isPass;
-      // var verb = (isPass) ? ADL.verbs.passed : ADL.verbs.failed;
-      const verbType = (isPass) ? 'passed' : 'failed';
+  getActivityType(model) {
+    return ADL.activityTypes.course;
+  }
 
-      const verb = {
-        id: 'http://adlnet.gov/expapi/verbs/' + verbType,
-        display: {}
-      };
+  getContextExtensions(model, state) {
+    const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
 
-      verb.display[this.get('recipeLang')] = verbType;
+    _.extend(extensions, {
+      'http://id.tincanapi.com/extension/browser-info': {
+        'user-agent-header': navigator.userAgent.toString()
+      }
+    });
 
-      return verb;
-    },
+    return extensions;
+  }
 
-    getActivityType: function(model) {
-      return ADL.activityTypes.assessment;
-    },
+}
 
-    getResult: function(state) {
-      const result = {
-        score: {
-          raw: state.score,
-          min: 0,
-          max: state.maxScore,
-          scaled: state.scoreAsPercent / 100
-        }/*,
-                success: state.isPass,
-                completion: state.isComplete */
-      };
-
-      return result;
-    }
-
-  });
-
-  return AssessmentStatementModel;
-
-});
+export default InitializedStatementModel;

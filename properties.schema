@@ -61,6 +61,15 @@
                   "validators": [],
                   "help": "This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity id is recommended."
                 },
+                "_contentRelease": {
+                  "type": "string",
+                  "required": false,
+                  "title": "Content Release",
+                  "default": "",
+                  "inputType": "Text",
+                  "validators": [],
+                  "help": "The numbered release of the content. Increment this value when the content is iteratively released. This will help to organize testing & analysis of data by each release of content."
+                },
                 "_tracking": {
                   "type": "object",
                   "required": false,

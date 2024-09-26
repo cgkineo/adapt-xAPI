@@ -43,6 +43,12 @@
               "description": "This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity ID is recommended.",
               "default": ""
             },
+            "_contentRelease": {
+              "type": "string",
+              "title": "Content Release",
+              "help": "The numbered release of the content. Increment this value when the content is iteratively released. This will help to organize testing & analysis of data by each release of content.",
+              "default": ""
+            },
             "_tracking": {
               "type": "object",
               "title": "Tracking",

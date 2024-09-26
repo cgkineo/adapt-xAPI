@@ -85,6 +85,16 @@ class QuestionStatementModel extends AbstractStatementModel {
     return contextActivities;
   }
 
+  getContextExtensions(model) {
+    const extensions = AbstractStatementModel.prototype.getObjectExtensions.apply(this, arguments);
+
+    _.extend(extensions, {
+      'http://id.tincanapi.com/extension/attempt-id': this.getAttempt(model)
+    });
+
+    return extensions;
+  }
+
   getAssessmentContextActivity(model) {
     const assessment = model.findAncestor('articles');
     const object = AbstractStatementModel.prototype.getObject.call(this, assessment);
@@ -113,6 +123,10 @@ class QuestionStatementModel extends AbstractStatementModel {
 
   getResponse(model) {
     return model.getResponse();
+  }
+
+  getAttempt(model) {
+    return model.get('_attempts') - model.get('_attemptsLeft');
   }
   
 }

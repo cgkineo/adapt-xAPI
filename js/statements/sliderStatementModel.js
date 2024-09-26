@@ -1,12 +1,8 @@
 import QuestionStatementModel from './questionStatementModel';
 
-class SliderStatementModel extends QuestionStatementModel {
+const DELIMETER = '[:]';
 
-  defaults() {
-    return {
-      DELIMETER: '[:]'
-    }
-  }
+class SliderStatementModel extends QuestionStatementModel {
 
   getInteractionObject(model) {
     const definition = {
@@ -26,7 +22,7 @@ class SliderStatementModel extends QuestionStatementModel {
       const top = correctRange._top || '';
 
       return [
-        bottom + this.DELIMETER + top
+        bottom + DELIMETER + top
       ];
     }
   }

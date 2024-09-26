@@ -8,10 +8,12 @@ Please refer to [example.json](example.json) for the JSON snippet which should b
 
 | Property | Type | Default | Description |
 |--|--|--|--|
-| \_isEnabled | Boolean | `false` | Set to `true` to enable the extension.
+| \_isEnabled | Boolean | `true` | Set to `true` to enable the extension.
+| \_isRestoreEnabled | Boolean | `false` | If enabled, the course will use xAPI data to restore course progress.
+| \_isDebugModeEnabled | Boolean | `false` | If enabled, the course will continue to generate statements for testing but it will instead post the statement to the console instead of the LRS.
 | \_activityId | String | `""` | Used to populate the Activity id included in _tincan.xml_ and for use in the Statement and State API. The value will be overriden if changed on the hosting environment.
 | \_revision | String | `""` | This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity id is recommended.
-| \_tracking | Object | `{ _storeQuestionResponses: true, _questionInteractions: true, _assessmentsCompletion: false, _assessmentCompletion: true }` | <ul><li>\_storeQuestionResponses: Restore question responses across browser sessions.</li><li>\_questionInteractions: Record statements for questions.</li><li>\_assessmentsCompletion: Record a completed statement on completion of individual assessments.</li><li>\_assessmentCompletion: Record a completed statement on completion of all assessments combined.</li></ul>
+| \_tracking | Object | `{ _storeQuestionResponses: true, _questionInteractions: true, _assessmentsCompletion: false, _assessmentCompletion: true, _navbar: true, _trackingErrors: true, _visua11y: false }` | <ul><li>\_storeQuestionResponses: Restore question responses across browser sessions.</li><li>\_questionInteractions: Record statements for questions.</li><li>\_assessmentsCompletion: Record a completed statement on completion of individual assessments.</li><li>\_assessmentCompletion: Record a completed statement on completion of all assessments combined.</li><li>\_navbar: If enabled, the course will send a statement whenever a selection has been made with `pageLevelProgress`, `drawer`, `help` or `visua11y`.</li><li>\_trackingErrors: If enabled, the course will send a statement whenever a connection issue occurs with the spoor plug-in.</li><li>\_visua11y: If enabled, the course will send a statement whenever a preference has been selected within the visua11y options.</li></ul>
 | \_errors | Object | See [example.json](example.json) | The `title` and `body` content to be displayed to the user in the event that data cannot be sent to the LRS. `_isCancellable: false` can be used to prevent the user from closing the error and proceeding with the course (requires fix for https://github.com/adaptlearning/adapt_framework/issues/2743).<br><br>The types of errors are as follows:<ul><li>\_launch: For errors associated with a failed launch when connecting to the LRS.</li><li>\_lrs: For errors associated with failed communication to the LRS when using the Statement or State API.</li><li>\_activityId: Error to indicate the Activity id is missing and data will not be tracked.</li></ul>
 
 ## Launch types
@@ -31,21 +33,26 @@ The granular detail of what is included within each statement and how to analyse
 |--|--|
 | http://adlnet.gov/expapi/activities/course | Defines the course model.
 | http://adlnet.gov/expapi/verbs/module | Defines a content page model.
-| http://adlnet.gov/expapi/activities/interaction | Defines a component model.
+| http://adlnet.gov/expapi/activities/interaction | Defines a component model or UI element.
 | http://adlnet.gov/expapi/verbs/cmi.interaction | Defines a question component model.
 | http://adlnet.gov/expapi/activities/assessment | Defines an assessment article model and/or the overall assessment.
+| http://id.tincanapi.com/activitytype/resource | Defines a resource link.
+| http://id.tincanapi.com/activitytype/vocabulary-word | Defines a glossary term.
 
 ### Verbs
 | Verb | id | Description |
 |--|--|--|
 | initialized | http://adlnet.gov/expapi/verbs/initialized | Sent once the course has been launched, to indicate the start of the session.
 | terminated | http://adlnet.gov/expapi/verbs/terminated | Sent once the course has been closed, to indicate the end of a session.
-| preferred | http://adlnet.gov/expapi/verbs/preferred | Sent to indicate a user’s language preference.
+| preferred | http://adlnet.gov/expapi/verbs/preferred | Sent to indicate a user’s language preference or chosen course preference in visua11y.
 | completed | http://adlnet.gov/expapi/verbs/completed | Sent once an activity within the course has been completed. As default, restricted to course and page models. Component completion can be enabled as required for each model in _components.json_ via `_recordCompletion: true`.
 | experienced | http://adlnet.gov/expapi/verbs/experienced | Sent each time a user leaves a page.
 | answered | http://adlnet.gov/expapi/verbs/answered | Sent each time a question component has been answered.
 | passed | http://adlnet.gov/expapi/verbs/passed | Sent should a user achieve the required passmark for an assessment.
 | failed | http://adlnet.gov/expapi/verbs/failed | Sent should a user score below the required passmark for an assessment.
+| received | http://activitystrea.ms/schema/1.0/receive | Sent one a learner is served a notification, such as a loss of connectivity with an LMS.
+| accessed | http://activitystrea.ms/schema/1.0/access | Sent one a learner selected a link to a resource.
+| viewed | http://id.tincanapi.com/verb/viewed | Sent one a learner opened a glossary term within the drawer.
 
 ## Limitations
 - Does not support multiple endpoints for storing data to more than one LRS.

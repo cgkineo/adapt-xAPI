@@ -25,6 +25,24 @@
                   "validators": [],
                   "help": "If enabled, the course will be tracked by xAPI."
                 },
+                "_isRestoreEnabled": {
+                  "type": "boolean",
+                  "required": true,
+                  "default": false,
+                  "title": "Restore Progress from LRS",
+                  "inputType": "Checkbox",
+                  "validators": [],
+                  "help": "If enabled, the course will use xAPI data to restore course progress."
+                },
+                "_isDebugModeEnabled": {
+                  "type": "boolean",
+                  "required": true,
+                  "default": false,
+                  "title": "Developer Mode",
+                  "inputType": "Checkbox",
+                  "validators": [],
+                  "help": "If enabled, the course will continue to generate statements for testing but it will instead post the statement to the console instead of the LRS."
+                },
                 "_activityId": {
                   "type": "string",
                   "required": true,
@@ -83,6 +101,33 @@
                       "inputType": "Checkbox",
                       "validators": [],
                       "help": "If enabled, the course will send a statement when the assessment have been completed. If using multiple assessments, the statement will be sent when all assessments have been completed."
+                    },
+                    "_navbar": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": true,
+                      "title": "Record Navigational Bar Button Selections",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "If enabled, the course will send a statement whenever a selection has been made with 'pageLevelProgress', 'drawer', 'help' or 'visua11y'."
+                    },
+                    "_trackingErrors": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Record SCORM tracking errors",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "If enabled, the course will send a statement whenever a connection issue occurs with the spoor plug-in."
+                    },
+                    "_visua11y": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Record preference selections within visua11y",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "If enabled, the course will send a statement whenever a preference has been selected within the visua11y options."
                     }
                   }
                 },

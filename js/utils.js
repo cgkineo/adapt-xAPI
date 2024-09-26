@@ -1,66 +1,61 @@
-define(function() {
+const Utils = {
+  
+  getISO8601Duration(milliseconds) {
+    const centiseconds = Math.round(milliseconds / 10);
+    const hours = parseInt(centiseconds / 360000, 10);
+    const minutes = parseInt((centiseconds % 360000) / 6000, 10);
+    const seconds = ((centiseconds % 360000) % 6000) / 100;
 
-  const Utils = {
+    let durationString = 'PT';
+    if (hours > 0) durationString += hours + 'H';
+    if (minutes > 0) durationString += minutes + 'M';
+    durationString += seconds + 'S';
 
-    getISO8601Duration: function(milliseconds) {
-      const centiseconds = Math.round(milliseconds / 10);
-      const hours = parseInt(centiseconds / 360000, 10);
-      const minutes = parseInt((centiseconds % 360000) / 6000, 10);
-      const seconds = ((centiseconds % 360000) % 6000) / 100;
+    return durationString;
+  },
 
-      let durationString = 'PT';
-      if (hours > 0) durationString += hours + 'H';
-      if (minutes > 0) durationString += minutes + 'M';
-      durationString += seconds + 'S';
+  getTimestamp() {
+    const date = new Date();
+    const ISODate = this.getISODate(date);
+    const ISOTime = this.getISOTime(date);
+    const ISOOffset = this.getISOOffset(date);
 
-      return durationString;
-    },
+    return ISODate + 'T' + ISOTime + ISOOffset;
+  },
 
-    getTimestamp: function() {
-      const date = new Date();
-      const ISODate = this.getISODate(date);
-      const ISOTime = this.getISOTime(date);
-      const ISOOffset = this.getISOOffset(date);
+  getISODate(date) {
+    const year = date.getFullYear();
+    const month = this.padZeros(date.getMonth() + 1);
+    const monthDay = this.padZeros(date.getDate());
 
-      return ISODate + 'T' + ISOTime + ISOOffset;
-    },
+    return `${year}-${month}-${monthDay}`;
+  },
 
-    getISODate: function(date) {
-      const year = date.getFullYear();
-      const month = this.padZeros(date.getMonth() + 1);
-      const monthDay = this.padZeros(date.getDate());
+  getISOTime(date) {
+    const hours = this.padZeros(date.getHours());
+    const minutes = this.padZeros(date.getMinutes());
+    const seconds = this.padZeros(date.getSeconds());
+    const milliseconds = this.padZeros(date.getMilliseconds());
 
-      return year + '-' + month + '-' + monthDay;
-    },
+    return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+  },
 
-    getISOTime: function(date) {
-      const hours = this.padZeros(date.getHours());
-      const minutes = this.padZeros(date.getMinutes());
-      const seconds = this.padZeros(date.getSeconds());
-      const milliseconds = this.padZeros(date.getMilliseconds());
+  getISOOffset(date) {
+    const offset = date.getTimezoneOffset();
 
-      return hours + ':' + minutes + ':' + seconds + '.' + milliseconds;
-    },
+    if (offset === 0) return 'Z';
 
-    getISOOffset: function(date) {
-      const offset = date.getTimezoneOffset();
+    const absOffset = Math.abs(offset);
+    const offsetHours = this.padZeros(Math.floor(absOffset / 60));
+    const offsetMinutes = this.padZeros(Math.floor(absOffset % 60));
+    const offsetSign = offset > 0 ? '-' : '+';
 
-      if (offset === 0) return 'Z';
+    return `${offsetSign}${offsetHours}:${offsetMinutes}`;
+  },
 
-      const absOffset = Math.abs(offset);
-      const offsetHours = this.padZeros(Math.floor(absOffset / 60));
-      const offsetMinutes = this.padZeros(Math.floor(absOffset % 60));
-      const offsetSign = offset > 0 ? '-' : '+';
+  padZeros(num) {
+    return num < 10 ? '0' + num : num.toString();
+  }
+}
 
-      return offsetSign + offsetHours + ':' + offsetMinutes;
-    },
-
-    padZeros: function(num) {
-      return num < 10 ? '0' + num : num.toString();
-    }
-
-  };
-
-  return Utils;
-
-});
+export default Utils;

@@ -69,6 +69,7 @@ class xAPI extends Backbone.Controller {
       activityId: this.getActivityId(),
       registration: this.launchModel.get('registration'),
       revision: this._config._revision || null,
+      contentRelease: this._config._contentRelease || null,
       actor: this.launchModel.get('actor'),
       contextActivities: this.launchModel.get('contextActivities')
     };

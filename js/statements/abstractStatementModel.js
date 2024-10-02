@@ -10,6 +10,7 @@ export default class AbstractStatementModel extends Backbone.Model {
       activityId: null,
       registration: null,
       revision: null,
+      contentRelease: null,
       actor: null,
       contextActivities: {
         grouping: []
@@ -139,10 +140,14 @@ export default class AbstractStatementModel extends Backbone.Model {
   getContextExtensions(model, state) {
     const buildConfig = Adapt.build;
     const frameworkVersion = (buildConfig) ? buildConfig.get('package').version : '<3.0.0';
+    const specificationRevision = this.get('revision');
+    const contentRelease = this.get('contentRelease');
 
     const extensions = {
       'https://adaptlearning.org/xapi/extension/framework': 'Adapt',
-      'https://adaptlearning.org/xapi/extension/framework_version': frameworkVersion
+      'https://adaptlearning.org/xapi/extension/framework_version': frameworkVersion,
+      'https://adaptlearning.org/xapi/extension/specification_revision': specificationRevision,
+      'https://adaptlearning.org/xapi/extension/content_release': contentRelease
     };
 
     return extensions;

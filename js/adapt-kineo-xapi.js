@@ -7,9 +7,6 @@ import LaunchModel from './launchModel';
 import StatementModel from './statementModel';
 import StateModel from './stateModel';
 import 'libraries/xapiwrapper.min';
-import 'libraries/url-polyfill';
-import 'libraries/fetch-polyfill';
-import 'libraries/promise-polyfill.min';
 
 class xAPI extends Backbone.Controller {
 

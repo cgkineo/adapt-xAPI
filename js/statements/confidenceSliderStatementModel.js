@@ -1,20 +1,16 @@
-define([
-  './sliderStatementModel'
-], function(SliderStatementModel) {
+import QuestionStatementModel from './questionStatementModel';
 
-  const ConfidenceSliderStatementModel = SliderStatementModel.extend({
+class ConfidenceSliderStatementModel extends QuestionStatementModel {
 
-    getResult: function(model) {
-      const result = {
-        completion: model.get('_isComplete'),
-        response: this.getResponse(model)
-      };
+  getResult(model) {
+    const result = {
+      completion: model.get('_isComplete'),
+      response: this.getResponse(model)
+    };
 
-      return result;
-    },
+    return result;
+  }
+  
+}
 
-  });
-
-  return ConfidenceSliderStatementModel;
-
-});
+export default ConfidenceSliderStatementModel;

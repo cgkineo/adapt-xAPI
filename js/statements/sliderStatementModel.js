@@ -1,36 +1,32 @@
-define([
-  './questionStatementModel'
-], function(QuestionStatementModel) {
+import QuestionStatementModel from './questionStatementModel';
 
-  const DELIMETER = '[:]';
+const DELIMETER = '[:]';
 
-  const SliderStatementModel = QuestionStatementModel.extend({
+class SliderStatementModel extends QuestionStatementModel {
 
-    getInteractionObject: function(model) {
-      const definition = {
-        correctResponsesPattern: this.getCorrectResponsesPattern(model)
-      };
+  getInteractionObject(model) {
+    const definition = {
+      correctResponsesPattern: this.getCorrectResponsesPattern(model)
+    };
 
-      return definition;
-    },
+    return definition;
+  }
 
-    getCorrectResponsesPattern: function(model) {
-      const correctAnswer = model.get('_correctAnswer');
-      if (correctAnswer) return [correctAnswer];
+  getCorrectResponsesPattern(model) {
+    const correctAnswer = model.get('_correctAnswer');
+    if (correctAnswer) return [correctAnswer];
 
-      const correctRange = model.get('_correctRange');
-      if (correctRange) {
-        const bottom = correctRange._bottom || '';
-        const top = correctRange._top || '';
+    const correctRange = model.get('_correctRange');
+    if (correctRange) {
+      const bottom = correctRange._bottom || '';
+      const top = correctRange._top || '';
 
-        return [
-          bottom + DELIMETER + top
-        ];
-      }
+      return [
+        bottom + DELIMETER + top
+      ];
     }
+  }
+  
+}
 
-  });
-
-  return SliderStatementModel;
-
-});
+export default SliderStatementModel;

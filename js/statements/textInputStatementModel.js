@@ -1,39 +1,35 @@
-define([
-  './questionStatementModel'
-], function(QuestionStatementModel) {
+import QuestionStatementModel from './questionStatementModel';
 
-  const TextInputStatementModel = QuestionStatementModel.extend({
+class TextInputStatementModel extends QuestionStatementModel {
+  
+  getInteractionObject(model) {
+    const correctResponsesPattern = this.getCorrectResponsesPattern(model);
+    if (correctResponsesPattern === null) return {};
 
-    getInteractionObject: function(model) {
-      const correctResponsesPattern = this.getCorrectResponsesPattern(model);
-      if (correctResponsesPattern === null) return {};
+    const definition = {
+      correctResponsesPattern
+    };
 
-      const definition = {
-        correctResponsesPattern
-      };
+    return definition;
+  }
 
-      return definition;
-    },
+  getCorrectResponsesPattern(model) {
+    let correctAnswers = model.get('_answers');
 
-    getCorrectResponsesPattern: function(model) {
-      let correctAnswers = model.get('_answers');
+    // use same assumption as component that generic answers supersede specific answers
+    if (!correctAnswers) {
+      const items = model.get('_items');
 
-      // use same assumption as component that generic answers supersede specific answers
-      if (!correctAnswers) {
-        const items = model.get('_items');
+      // Exclude correctResponsesPattern if using specific answers when there is more than one input?
+      // 'Where the criteria for a question are complex and correct responses cannot be exhaustively listed, Learning Record Providers are discouraged from using the "correctResponsesPattern" property.'
+      if (items > 1) return null;
 
-        // Exclude correctResponsesPattern if using specific answers when there is more than one input?
-        // 'Where the criteria for a question are complex and correct responses cannot be exhaustively listed, Learning Record Providers are discouraged from using the "correctResponsesPattern" property.'
-        if (items > 1) return null;
-
-        correctAnswers = _.pluck(items, '_answers');
-      }
-
-      return _.flatten(correctAnswers);
+      correctAnswers = _.pluck(items, '_answers');
     }
 
-  });
+    return _.flatten(correctAnswers);
+  }
 
-  return TextInputStatementModel;
+}
 
-});
+export default TextInputStatementModel;

@@ -1,6 +1,6 @@
 import PreferredStatementModel from './preferredStatementModel';
 
-class PreferredLanguageStatementModel extends PreferredStatementModel {
+class LanguageStatementModel extends PreferredStatementModel {
 
   getData(model, lang) {
     const statement = PreferredStatementModel.prototype.getData.apply(this, arguments);
@@ -23,4 +23,4 @@ class PreferredLanguageStatementModel extends PreferredStatementModel {
   }
 }
 
-export default PreferredLanguageStatementModel;
+export default LanguageStatementModel;

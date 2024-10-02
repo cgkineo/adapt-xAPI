@@ -1,40 +1,34 @@
-define([
-  './abstractStatementModel'
-], function(AbstractStatementModel) {
+import AbstractStatementModel from './abstractStatementModel';
 
-  const InitializedStatementModel = AbstractStatementModel.extend({
+class InitializedStatementModel extends AbstractStatementModel {
 
-    getVerb: function(model) {
-      // return ADL.verbs.initialized;
+  getVerb(model) {
+    const verb = {
+      id: 'http://adlnet.gov/expapi/verbs/initialized',
+      display: {}
+    };
 
-      const verb = {
-        id: 'http://adlnet.gov/expapi/verbs/initialized',
-        display: {}
-      };
+    verb.display[this.get('recipeLang')] = 'initialized';
 
-      verb.display[this.get('recipeLang')] = 'initialized';
+    return verb;
+  }
 
-      return verb;
-    },
+  getActivityType(model) {
+    return ADL.activityTypes.course;
+  }
 
-    getActivityType: function(model) {
-      return ADL.activityTypes.course;
-    },
+  getContextExtensions(model, state) {
+    const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
 
-    getContextExtensions: function(model, state) {
-      const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
+    _.extend(extensions, {
+      'http://id.tincanapi.com/extension/browser-info': {
+        'user-agent-header': navigator.userAgent.toString()
+      }
+    });
 
-      _.extend(extensions, {
-        'http://id.tincanapi.com/extension/browser-info': {
-          'user-agent-header': navigator.userAgent.toString()
-        }
-      });
+    return extensions;
+  }
 
-      return extensions;
-    }
+}
 
-  });
-
-  return InitializedStatementModel;
-
-});
+export default InitializedStatementModel;

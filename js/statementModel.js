@@ -2,19 +2,14 @@ import Adapt from "core/js/adapt";
 import InitializedStatementModel from "./statements/initializedStatementModel";
 import TerminatedStatementModel from "./statements/terminatedStatementModel";
 import LanguageStatementModel from "./statements/languageStatementModel";
-import Visua11yStatementModel from "./statements/visua11yStatementModel";
 import CompletedStatementModel from "./statements/completedStatementModel";
 import ExperiencedStatementModel from "./statements/experiencedStatementModel";
-import InteractedStatementModel from "./statements/interactedStatementModel";
-import ReceivedStatementModel from "./statements/receivedStatementModel";
 import McqStatementModel from "./statements/mcqStatementModel";
 import SliderStatementModel from "./statements/sliderStatementModel";
 import ConfidenceSliderStatementModel from "./statements/confidenceSliderStatementModel";
 import TextInputStatementModel from "./statements/textInputStatementModel";
 import MatchingStatementModel from "./statements/matchingStatementModel";
 import AssessmentStatementModel from "./statements/assessmentStatementModel";
-import AccessedStatementModel from "./statements/accessedStatementModel";
-import ViewedStatementModel from "./statements/viewedStatementModel";
 
 class StatementModel extends Backbone.Model {
 
@@ -23,10 +18,7 @@ class StatementModel extends Backbone.Model {
       _tracking: {
         _questionInteractions: true,
         _assessmentsCompletion: false,
-        _assessmentCompletion: true,
-        _navbar: true,
-        _trackingErrors: true,
-        _visua11y: false
+        _assessmentCompletion: true
       },
       xAPIWrapper: null,
       _isInitialized: false,
@@ -69,8 +61,6 @@ class StatementModel extends Backbone.Model {
     this.listenTo(Adapt, {
       'pageView:ready': this.onPageViewReady,
       'router:location': this.onRouterLocation,
-      'resources:itemClicked': this.onResourceClicked,
-      'glossary:termSelected': this.onGlossaryClicked,
       'tracking:complete': this.onTrackingComplete
     });
 
@@ -90,21 +80,6 @@ class StatementModel extends Backbone.Model {
     if (this._tracking._assessmentCompletion) {
       this.listenTo(Adapt, {
         'assessment:complete': this.onAssessmentComplete
-      });
-    }
-
-    if (this._tracking._navbar) {
-      this.listenTo(Adapt, {
-        'help:opened': this.onHelpOpened,
-        'navigation:toggleDrawer': this.onDrawerOpened,
-        'pageLevelProgress:toggleDrawer': this.onPLPDrawerOpened
-      });
-    }
-
-    if (this._tracking._visua11y) {
-      this.listenTo(Adapt, {
-        'visua11y:opened': this.onVisua11yOpened,
-        'visua11y:toggle': this.onVisua11yToggle
       });
     }
 
@@ -194,26 +169,6 @@ class StatementModel extends Backbone.Model {
     model.unset('_sessionDuration', { silent: true });
   }
 
-  sendInteracted(type) {
-    const model = Adapt.course;
-
-    const config = this.attributes;
-    const statementModel = new InteractedStatementModel(config, { _type: type });
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendReceived(type) {
-    const model = Adapt.course;
-
-    const config = this.attributes;
-    const statementModel = new ReceivedStatementModel(config, { _type: type });
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
   sendQuestionAnswered(model) {
     const config = this.attributes;
     const questionType = model.get('_component');
@@ -253,43 +208,10 @@ class StatementModel extends Backbone.Model {
     this.send(statement);
   }
 
-  sendResourceAccessed(model) {
-    const config = this.attributes;
-    const statementModel = new AccessedStatementModel(config);
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendGlossaryViewed(model) {
-    const config = this.attributes;
-    const statementModel = new ViewedStatementModel(config);
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendVisua11yPreference(name, state) {
-    const model = Adapt.course;
-
-    const config = this.attributes;
-    const statementModel = new Visua11yStatementModel(config, { _name: name, _state: state });
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
   /*
    * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
    */
   send(statement) {
-    const config = Adapt.config.get('_xapi');
-
-    if (config?._isDebugModeEnabled) {
-      console.log(statement);
-      return;
-    }
-
     const lrs = this.xAPIWrapper.lrs;
     const url = lrs.endpoint + 'statements';
     const data = JSON.stringify(statement);
@@ -455,47 +377,7 @@ class StatementModel extends Backbone.Model {
   onQuestionInteraction(view) {
     this.sendQuestionAnswered(view.model);
   }
-
-  onResourceClicked(data) {
-    const model = new Backbone.Model();
-
-    model.set({
-      _id: (data.type === 'document') ? data.filename : '?link=' + data._link,
-      title: data.title,
-      description: data.description,
-      url: (data.type === 'document') ? data.filename : data._link
-    });
-
-    this.sendResourceAccessed(model);
-  }
-
-  onGlossaryClicked(data) {
-    const model = new Backbone.Model();
-
-    model.set({
-      term: data.attributes.term,
-      description: data.attributes.description
-    });
-
-    this.sendGlossaryViewed(model);
-  }
-
-  onDrawerOpened() {
-    this.sendInteracted('drawer');
-  }
-
-  onPLPDrawerOpened() {
-    this.sendInteracted('pageLevelProgress');
-  }
-
-  onVisua11yOpened() {
-    this.sendInteracted('accessibility');
-  }
-
-  onVisua11yToggle(model, name, state) {
-    this.sendVisua11yPreference(model, name, state);
-  }
-
+  
   onInitializeError() {
     this.sendReceived('Initialization Error');
   }

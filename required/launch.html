@@ -9,15 +9,15 @@
 			window.location = 'index.html?endpoint=' + getLRSEndpoint() + '&actor=' + getActor() + '&auth=' + getAuth() + '&activity_id=' + getActivityId() + '&registration=' + getRegistration();
 
 			function getLRSEndpoint() {
-				var endpoint = "https://saas.learninglocker.net/data/xAPI/";
+				var endpoint = "https://kineo.learninglocker.net/data/xAPI";
 
 				return encodeURIComponent(endpoint);
 			}
 
 			function getActor() {
 				var actor = {
-					mbox: "mailto:username@domain.com",
-					name: "Test User"
+					mbox: "mailto:joe.replin@kineo.com",
+					name: "Joe Replin"
 				};
 
 				return JSON.stringify(actor);
@@ -25,7 +25,7 @@
 
 			function getAuth() {
 				// "Basic " + toBase64('username:password');
-				var auth = "";
+				var auth = "Basic ZDNlNzY5MWVjMzNjYzAzYWU0MmQxNDE0MDY1NzE4ZGUxZGY4Njk3ODo0ODQyMmMyZDA4M2JkZTNjYTc1MzhlNWZkMjQ1ZGQyNGM1MWE5Y2M3";
 
 				return auth;
 			}

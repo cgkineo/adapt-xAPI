@@ -107,11 +107,6 @@ class QuestionStatementModel extends AbstractStatementModel {
     const result = {
       score: {
         raw: model.get('_score') || 0
-        /*
-          min: 0,
-          max: model.get('_maxScore'),
-          scaled: model.get('_scoreAsPercent') / 100 
-        */
       },
       success: model.get('_isCorrect'),
       completion: model.get('_isComplete'),

@@ -2,20 +2,14 @@
 {
 	"_xapi": {
         "_isEnabled": true,
-        "_isRestoreEnabled": true,
-        "_isDebugModeEnabled": false,
         "_comment": "included in tincan.xml. _activityId will be overriden if changed on the hosting environment.",
 	"_activityId": "https://example.com/unique_identifier",
 	"_revision": "",
-        "_contentRelease": "",
         "_tracking": {
             "_storeQuestionResponses": true,
             "_questionInteractions": true,
             "_assessmentsCompletion": false,
-            "_assessmentCompletion": true,
-            "_navbar": true,
-            "_trackingErrors": true,
-            "_visua11y": false
+            "_assessmentCompletion": true
         },
         "_errors": {
             "_launch": {

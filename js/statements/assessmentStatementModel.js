@@ -15,7 +15,6 @@ class AssessmentStatementModel extends AbstractStatementModel {
     if (state.attributes) return;
 
     const isPass = state.isPass;
-    // var verb = (isPass) ? ADL.verbs.passed : ADL.verbs.failed;
     const verbType = (isPass) ? 'passed' : 'failed';
 
     const verb = {
@@ -40,10 +39,6 @@ class AssessmentStatementModel extends AbstractStatementModel {
         max: state.maxScore,
         scaled: state.scoreAsPercent / 100
       }
-      /*
-        success: state.isPass,
-        completion: state.isComplete 
-      */
     };
 
     return result;

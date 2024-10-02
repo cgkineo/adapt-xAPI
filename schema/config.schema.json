@@ -19,18 +19,6 @@
               "description": "If enabled, the course will be tracked by xAPI.",
               "default": true
             },
-            "_isRestoreEnabled": {
-              "type": "boolean",
-              "title": "Restore Progress from LRS",
-              "description": "If enabled, the course will use xAPI data to restore course progress.",
-              "default": false
-            },
-            "_isDebugModeEnabled": {
-              "type": "boolean",
-              "title": "Developer Mode",
-              "description": "If enabled, the course will continue to generate statements for testing but it will instead post the statement to the console instead of the LRS.",
-              "default": false
-            },
             "_activityId": {
               "type": "string",
               "title": "Activity ID",
@@ -41,12 +29,6 @@
               "type": "string",
               "title": "Revision",
               "description": "This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity ID is recommended.",
-              "default": ""
-            },
-            "_contentRelease": {
-              "type": "string",
-              "title": "Content Release",
-              "help": "The numbered release of the content. Increment this value when the content is iteratively released. This will help to organize testing & analysis of data by each release of content.",
               "default": ""
             },
             "_tracking": {
@@ -77,24 +59,6 @@
                   "title": "Record assessment completion",
                   "description": "If enabled, the course will send a statement when the assessment have been completed. If using multiple assessments, the statement will be sent when all assessments have been completed.",
                   "default": true
-                },
-                "_navbar": {
-                  "type": "boolean",
-                  "title": "Record Navigational Bar Button Selections",
-                  "description": "If enabled, the course will send a statement whenever a selection has been made with 'pageLevelProgress', 'drawer', 'help' or 'visua11y'.",
-                  "default": true
-                },
-                "_trackingErrors": {
-                  "type": "boolean",
-                  "title": "Record SCORM tracking errors",
-                  "description": "If enabled, the course will send a statement whenever a connection issue occurs with the spoor plug-in.",
-                  "default": true
-                },
-                "_visua11y": {
-                  "type": "boolean",
-                  "title": "Record preference selections within visua11y",
-                  "description": "If enabled, the course will send a statement whenever a preference has been selected within the visua11y options.",
-                  "default": false
                 }
               }
             },

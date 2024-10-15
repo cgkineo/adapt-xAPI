@@ -43,7 +43,6 @@ class StateModel extends Backbone.Model {
     };
 
     this.setOfflineStorageModel();
-
     this.load();
   }
 
@@ -96,34 +95,32 @@ class StateModel extends Backbone.Model {
   }
 
   load() {
-    const scope = this;
-
-    this._getStates(function(err, data) {
+    this._getStates((err, data) =>{
       if (err) {
-        scope.showErrorNotification();
+        this.showErrorNotification();
       } else {
         const states = data;
 
-        Async.each(states, function(id, callback) {
-          scope._fetchState(id, function(err, data) {
+        Async.each(states, (id, callback) => {
+          this._fetchState(id, (err, data) => {
             if (err) {
-              scope.showErrorNotification();
+              this.showErrorNotification();
             } else {
               // all data is now saved and retrieved as JSON, so no need for try/catch anymore
-              scope.set(id, data);
+              this.set(id, data);
             }
 
             callback();
           });
-        }, function(err) {
+        }, (err) => {
           if (err) {
-            scope.showErrorNotification();
+            this.showErrorNotification();
           } else {
-            scope._isLoaded = true;
+            this._isLoaded = true;
 
             Adapt.trigger('xapi:stateLoaded');
 
-            scope.listenTo(Adapt, 'app:dataReady', scope.onDataReady);
+            this.listenTo(Adapt, 'app:dataReady', this.onDataReady);
           }
         });
       }
@@ -131,25 +128,23 @@ class StateModel extends Backbone.Model {
   }
 
   reset() {
-    const scope = this;
-
-    this._getStates(function(err, data) {
+    this._getStates((err, data) => {
       if (err) {
-        scope.showErrorNotification();
+        this.showErrorNotification();
       } else {
         wait.begin();
 
         const states = data;
 
-        Async.each(states, function(id, callback) {
-          scope.delete(id, callback);
-        }, function(err) {
-          if (err) scope.showErrorNotification();
+        Async.each(states, (id, callback) => {
+          this.delete(id, callback);
+        }, (err) => {
+          if (err) this.showErrorNotification();
 
           const data = {};
           data[COMPONENTS_KEY] = [];
           data[DURATIONS_KEY] = [];
-          scope.set(data, { silent: true });
+          this.set(data, { silent: true });
 
           wait.end();
         });
@@ -167,7 +162,7 @@ class StateModel extends Backbone.Model {
   }
 
   set(id, value) {
-    super.set.apply(this, arguments);
+    Backbone.Model.prototype.set.apply(this, arguments);
 
     // @todo: save every time the value changes, or only on specific events?
     if (this._isLoaded) {
@@ -181,7 +176,6 @@ class StateModel extends Backbone.Model {
   }
 
   save(id, callback) {
-    const scope = this;
     const state = this.get(id);
     const data = JSON.stringify(state);
 
@@ -197,29 +191,27 @@ class StateModel extends Backbone.Model {
         'X-Experience-API-Version': this.xAPIWrapper.xapiVersion
       },
       body: data
-    }).then(function(response) {
+    }).then((response) => {
       // if (response) Adapt.log.debug(response);
 
       if (!response.ok) throw Error(response.statusText);
 
       if (callback) callback();
 
-      if (!scope._isRestored) wait.end();
+      if (!this._isRestored) wait.end();
 
       return response;
-    }).catch(function(error) {
-      scope.showErrorNotification();
+    }).catch((error) => {
+      this.showErrorNotification();
 
       if (callback) callback();
 
-      if (!scope._isRestored) wait.end();
+      if (!this._isRestored) wait.end();
     });
   }
 
   delete(id, callback) {
     this.unset(id, { silent: true });
-
-    const scope = this;
 
     fetch(this._getStateURL(id), {
       method: 'DELETE',
@@ -227,14 +219,14 @@ class StateModel extends Backbone.Model {
         Authorization: this.xAPIWrapper.lrs.auth,
         'X-Experience-API-Version': this.xAPIWrapper.xapiVersion
       }
-    }).then(function(response) {
+    }).then((response) => {
       if (!response.ok) throw Error(response.statusText);
 
       if (callback) callback();
 
       return response;
-    }).catch(function(error) {
-      scope.showErrorNotification();
+    }).catch((error) => {
+      this.showErrorNotification();
 
       if (callback) callback();
     });
@@ -255,8 +247,6 @@ class StateModel extends Backbone.Model {
   }
 
   _fetchState(stateId, callback) {
-    const scope = this;
-
     fetch(this._getStateURL(stateId), {
       method: 'GET',
       headers: {
@@ -266,30 +256,28 @@ class StateModel extends Backbone.Model {
         'Cache-Control': 'no-cache',
         Pragma: 'no-cache'
       }
-    }).then(function(response) {
+    }).then((response) => {
       if (!response.ok) throw Error(response.statusText);
 
       return response.json();
-    }).then(function(data) {
+    }).then((data) => {
       if (data) Adapt.log.debug(data);
 
       if (callback) callback(null, data);
-    }).catch(function(error) {
+    }).catch((error) => {
       console.error('Error fetching data:', error);
-      scope.showErrorNotification();
+      this.showErrorNotification();
 
       if (callback) callback();
     });
   }
 
   _getStates(callback) {
-    const scope = this;
-
     wait.begin();
 
-    this._fetchState(null, function(err, data) {
+    this._fetchState(null, (err, data) => {
       if (err) {
-        scope.showErrorNotification();
+        this.showErrorNotification();
 
         if (callback) callback(err, null);
       } else {
@@ -304,11 +292,11 @@ class StateModel extends Backbone.Model {
     let queue = this._queues[id];
 
     if (!queue) {
-      queue = this._queues[id] = Async.queue(function(id, callback) {
+      queue = this._queues[id] = Async.queue((id, callback) => {
         this.save(id, callback);
-      }.bind(this), 1);
+      }).bind(this), 1;
 
-      queue.drain = function() {
+      queue.drain = () => {
         Adapt.log.debug('State API queue cleared for ' + id);
       };
     }
@@ -328,8 +316,8 @@ class StateModel extends Backbone.Model {
 
   _restoreDataForState(state, models) {
     if (state.length > 0) {
-      state.forEach(function(data) {
-        const model = models.filter(function(model) {
+      state.forEach((data) => {
+        const model = models.filter((model) => {
           return model.get('_id') === data._id;
         })[0];
 
@@ -397,9 +385,9 @@ class StateModel extends Backbone.Model {
   onDataReady() {
     const config = Adapt.config.get('_xapi');
     if (config?._isRestoreEnabled === false) return;
-    wait.queue(function() {
+    wait.queue(() => {
       this.restore();
-    }.bind(this));
+    }).bind(this);
   }
 
   onAdaptInitialize() {
@@ -431,29 +419,27 @@ class StateModel extends Backbone.Model {
 
     if (!isStateReset) return;
 
-    const scope = this;
-
-    this._getStates(function(err, data) {
+    this._getStates((err, data) => {
       if (err) {
-        scope.showErrorNotification();
+        this.showErrorNotification();
       } else {
         wait.begin();
 
         const states = data;
 
-        const statesToReset = states.filter(function(id) {
+        const statesToReset = states.filter((id) => {
           return id !== 'lang';
         });
 
-        Async.each(statesToReset, function(id, callback) {
-          scope.delete(id, callback);
-        }, function(err) {
-          if (err) scope.showErrorNotification();
+        Async.each(statesToReset, (id, callback) => {
+          this.delete(id, callback);
+        }, (err) => {
+          if (err) this.showErrorNotification();
 
           const data = {};
           data[COMPONENTS_KEY] = [];
           data[DURATIONS_KEY] = [];
-          scope.set(data, { silent: true });
+          this.set(data, { silent: true });
 
           wait.end();
         });

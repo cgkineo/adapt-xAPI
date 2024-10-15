@@ -2,14 +2,14 @@ const Utils = {
   
   getISO8601Duration(milliseconds) {
     const centiseconds = Math.round(milliseconds / 10);
-    const hours = parseInt(centiseconds / 360000, 10);
-    const minutes = parseInt((centiseconds % 360000) / 6000, 10);
+    const hours = Math.floor(centiseconds / 360000);
+    const minutes = Math.floor((centiseconds % 360000) / 6000);
     const seconds = ((centiseconds % 360000) % 6000) / 100;
 
     let durationString = 'PT';
-    if (hours > 0) durationString += hours + 'H';
-    if (minutes > 0) durationString += minutes + 'M';
-    durationString += seconds + 'S';
+    if (hours > 0) durationString += `${hours}H`;
+    if (minutes > 0) durationString += `${minutes}M`;
+    durationString += `${seconds}S`;
 
     return durationString;
   },
@@ -20,7 +20,7 @@ const Utils = {
     const ISOTime = this.getISOTime(date);
     const ISOOffset = this.getISOOffset(date);
 
-    return ISODate + 'T' + ISOTime + ISOOffset;
+    return `${ISODate}T${ISOTime}${ISOOffset}`;
   },
 
   getISODate(date) {

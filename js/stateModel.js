@@ -1,6 +1,6 @@
 import Adapt from "core/js/adapt";
 import wait from "core/js/wait";
-import OfflineStorageExtension from "./offlineStorageExtension";
+import OfflineStorageExtension from "./OfflineStorageHandler";
 import * as Async from 'libraries/async.min';
 
 const COMPONENTS_KEY = 'components';

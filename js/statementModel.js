@@ -1,15 +1,15 @@
 import Adapt from "core/js/adapt";
-import InitializedStatementModel from "./statements/initializedStatementModel";
-import TerminatedStatementModel from "./statements/terminatedStatementModel";
-import LanguageStatementModel from "./statements/languageStatementModel";
-import CompletedStatementModel from "./statements/completedStatementModel";
-import ExperiencedStatementModel from "./statements/experiencedStatementModel";
-import McqStatementModel from "./statements/mcqStatementModel";
-import SliderStatementModel from "./statements/sliderStatementModel";
-import ConfidenceSliderStatementModel from "./statements/confidenceSliderStatementModel";
-import TextInputStatementModel from "./statements/textInputStatementModel";
-import MatchingStatementModel from "./statements/matchingStatementModel";
-import AssessmentStatementModel from "./statements/assessmentStatementModel";
+import InitializedStatementModel from "./statements/InitializedStatementModel";
+import TerminatedStatementModel from "./statements/TerminatedStatementModel";
+import LanguageStatementModel from "./statements/LanguageStatementModel";
+import CompletedStatementModel from "./statements/CompletedStatementModel";
+import ExperiencedStatementModel from "./statements/ExperiencedStatementModel";
+import McqStatementModel from "./statements/McqStatementModel";
+import SliderStatementModel from "./statements/SliderStatementModel";
+import ConfidenceSliderStatementModel from "./statements/ConfidenceSliderStatementModel";
+import TextInputStatementModel from "./statements/TextInputStatementModel";
+import MatchingStatementModel from "./statements/MatchingStatementModel";
+import AssessmentStatementModel from "./statements/AssessmentStatementModel";
 
 class StatementModel extends Backbone.Model {
 

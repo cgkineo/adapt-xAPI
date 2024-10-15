@@ -1,11 +1,11 @@
 import Adapt from 'core/js/adapt';
 import wait from 'core/js/wait';
 import offlineStorage from 'core/js/offlineStorage';
-import OfflineStorageExtension from './offlineStorageExtension';
-import ErrorNotificationModel from './errorNotificationModel';
-import LaunchModel from './launchModel';
-import StatementModel from './statementModel';
-import StateModel from './stateModel';
+import OfflineStorageExtension from './OfflineStorageHandler';
+import ErrorNotificationModel from './ErrorNotificationModel';
+import LaunchModel from './LaunchModel';
+import StatementModel from './StatementModel';
+import StateModel from './StateModel';
 import 'libraries/xapiwrapper.min';
 
 class xAPI extends Backbone.Controller {

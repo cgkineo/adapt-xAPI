@@ -8,7 +8,7 @@
   "targetAttribute": "_xapi",
   "displayName": "xAPI",
   "description": "An extension which allows the Experience API (xAPI) to collect data on human performance, stored within a suitable Learning Record Store (LRS).",
-  "main": "/js/adapt-kineo-xapi.js",
+  "main": "/js/adapt-xapi.js",
   "keywords": [
     "adapt-plugin",
     "adapt-extension",

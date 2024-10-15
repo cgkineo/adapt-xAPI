@@ -1,4 +1,4 @@
-import AbstractStatementModel from './abstractStatementModel';
+import AbstractStatementModel from './AbstractStatementModel';
 
 class QuestionStatementModel extends AbstractStatementModel {
 

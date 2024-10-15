@@ -1,4 +1,4 @@
-import AbstractStatementModel from './abstractStatementModel';
+import AbstractStatementModel from './AbstractStatementModel';
 
 class AssessmentStatementModel extends AbstractStatementModel {
 

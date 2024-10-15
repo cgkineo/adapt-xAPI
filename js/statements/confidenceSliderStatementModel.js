@@ -1,4 +1,4 @@
-import QuestionStatementModel from './questionStatementModel';
+import QuestionStatementModel from './QuestionStatementModel';
 
 class ConfidenceSliderStatementModel extends QuestionStatementModel {
 

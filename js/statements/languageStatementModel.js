@@ -1,4 +1,4 @@
-import PreferredStatementModel from './preferredStatementModel';
+import PreferredStatementModel from './PreferredStatementModel';
 
 class LanguageStatementModel extends PreferredStatementModel {
 

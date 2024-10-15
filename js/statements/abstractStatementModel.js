@@ -1,5 +1,5 @@
 import Adapt from "core/js/adapt";
-import Utils from "../utils";
+import Utils from "../Utils";
 
 export default class AbstractStatementModel extends Backbone.Model {
 

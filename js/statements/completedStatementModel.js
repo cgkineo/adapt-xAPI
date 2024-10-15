@@ -11,13 +11,13 @@ class CompletedStatementModel extends AbstractStatementModel {
     return statement;
   }
 
-  getVerb(model) {
+  getVerb() {
     const verb = {
       id: 'http://adlnet.gov/expapi/verbs/completed',
-      display: {}
+      display: {
+        [this.get('recipeLang')]: 'completed'
+      }
     };
-
-    verb.display[this.get('recipeLang')] = 'completed';
 
     return verb;
   }
@@ -32,6 +32,8 @@ class CompletedStatementModel extends AbstractStatementModel {
         return ADL.activityTypes.module;
       case 'component':
         return ADL.activityTypes.interaction;
+      default:
+        return null;
     }
   }
 

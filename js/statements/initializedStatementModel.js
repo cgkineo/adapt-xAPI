@@ -2,22 +2,22 @@ import AbstractStatementModel from './AbstractStatementModel';
 
 class InitializedStatementModel extends AbstractStatementModel {
 
-  getVerb(model) {
+  getVerb() {
     const verb = {
       id: 'http://adlnet.gov/expapi/verbs/initialized',
-      display: {}
+      display: {
+        [this.get('recipeLang')]: 'initialized'
+      }
     };
-
-    verb.display[this.get('recipeLang')] = 'initialized';
 
     return verb;
   }
 
-  getActivityType(model) {
+  getActivityType() {
     return ADL.activityTypes.course;
   }
 
-  getContextExtensions(model, state) {
+  getContextExtensions() {
     const extensions = super.getContextExtensions.apply(this, arguments);
 
     Object.assign(extensions, {

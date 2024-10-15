@@ -18,16 +18,16 @@ class AssessmentStatementModel extends AbstractStatementModel {
     const verbType = (isPass) ? 'passed' : 'failed';
 
     const verb = {
-      id: 'http://adlnet.gov/expapi/verbs/' + verbType,
-      display: {}
+      id: `http://adlnet.gov/expapi/verbs/${verbType}`,
+      display: {
+        [this.get('recipeLang')]: verbType
+      }
     };
-
-    verb.display[this.get('recipeLang')] = verbType;
 
     return verb;
   }
 
-  getActivityType(model) {
+  getActivityType() {
     return ADL.activityTypes.assessment;
   }
 

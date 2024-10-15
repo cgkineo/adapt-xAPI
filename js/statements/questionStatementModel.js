@@ -9,7 +9,7 @@ class QuestionStatementModel extends AbstractStatementModel {
     return statement;
   }
 
-  getVerb(model) {
+  getVerb() {
     const verb = {
       id: 'http://adlnet.gov/expapi/verbs/answered',
       display: {
@@ -20,7 +20,7 @@ class QuestionStatementModel extends AbstractStatementModel {
     return verb;
   }
 
-  getActivityType(model) {
+  getActivityType() {
     return 'http://adlnet.gov/expapi/activities/cmi.interaction';
   }
 

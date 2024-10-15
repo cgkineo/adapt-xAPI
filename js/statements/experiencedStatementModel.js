@@ -9,18 +9,18 @@ class ExperiencedStatementModel extends AbstractStatementModel {
     return statement;
   }
 
-  getVerb(model) {
+  getVerb() {
     const verb = {
       id: 'http://adlnet.gov/expapi/verbs/experienced',
-      display: {}
+      display: {
+        [this.get('recipeLang')]: 'experienced'
+      }
     };
-
-    verb.display[this.get('recipeLang')] = 'experienced';
 
     return verb;
   }
 
-  getActivityType(model) {
+  getActivityType() {
     return ADL.activityTypes.module;
   }
 

@@ -4,13 +4,11 @@ class LanguageStatementModel extends PreferredStatementModel {
 
   getData(model, lang) {
     const statement = super.getData.apply(this, arguments);
-
     statement.result = this.getResult(model, lang);
-
     return statement;
   }
 
-  getActivityType(model) {
+  getActivityType() {
     return ADL.activityTypes.course;
   }
 

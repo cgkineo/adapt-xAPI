@@ -1,4 +1,4 @@
-const OfflineStorageExtension = {
+const OfflineStorageHandler = {
 
   // will be set to StateModel once ready - store values until then
   model: new Backbone.Model(),
@@ -33,17 +33,16 @@ const OfflineStorageExtension = {
   },
 
   _getIdFromActor(actor) {
-    let id = actor.openid;
-    if (id) return id;
-
-    id = actor.account && actor.account.name;
-    if (id) return id;
-
-    id = actor.mbox || actor.mbox_sha1sum;
-
-    return id;
+    const { openid, mbox, mbox_sha1sum, account } = actor;
+    if (openid) return openid;
+    if (mbox) return mbox;
+    if (mbox_sha1sum) return mbox_sha1sum;
+    if (account && account.homePage && account.name) {
+      return `${account.homePage}:${account.name}`;
+    }
+    return null;
   }
 
 }
 
-export default OfflineStorageExtension;
+export default OfflineStorageHandler;

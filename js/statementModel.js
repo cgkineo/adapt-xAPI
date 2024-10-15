@@ -1,4 +1,6 @@
 import Adapt from "core/js/adapt";
+import data from "core/js/data";
+import location from "core/js/location";
 import InitializedStatementModel from "./statements/InitializedStatementModel";
 import TerminatedStatementModel from "./statements/TerminatedStatementModel";
 import LanguageStatementModel from "./statements/LanguageStatementModel";
@@ -36,12 +38,9 @@ class StatementModel extends Backbone.Model {
     });
     
     // Instance Variables
-    this._tracking = {
-      ...this.defaults()._tracking,
-      ...options._tracking
-    };
-
-    this.xAPIWrapper = options.wrapper;
+    const { xAPIWrapper, _tracking } = options;
+    this.xAPIWrapper = xAPIWrapper;
+    this._tracking = { ...this.defaults()._tracking, ..._tracking };
 
     Object.assign(this._tracking, options._tracking);
   }
@@ -52,10 +51,10 @@ class StatementModel extends Backbone.Model {
     // don't create new listeners for those which are still valid from initial course load
     if (this._isInitialized) return;
 
-    this._onVisibilityChange = this.onVisibilityChange.bind(this);
+    this._onVisibilityChange = () => this.onVisibilityChange();
     $(document).on('visibilitychange', this._onVisibilityChange);
 
-    this._onWindowUnload = this.onWindowUnload.bind(this);
+    this._onWindowUnload = () => this.onWindowUnload();
     $(window).on('beforeunload unload', this._onWindowUnload);
 
     this.listenTo(Adapt, {
@@ -118,8 +117,8 @@ class StatementModel extends Backbone.Model {
   }
 
   sendInitialized() {
-    const config = this.attributes;
-    const statementModel = new InitializedStatementModel(config);
+    const { attributes } = this;
+    const statementModel = new InitializedStatementModel(attributes);
     const statement = statementModel.getData(Adapt.course);
 
     this.send(statement);
@@ -130,16 +129,16 @@ class StatementModel extends Backbone.Model {
 
     this.setModelDuration(model);
 
-    const config = this.attributes;
-    const statementModel = new TerminatedStatementModel(config);
+    const { attributes } = this;
+    const statementModel = new TerminatedStatementModel(attributes);
     const statement = statementModel.getData(model);
 
     this.send(statement);
   }
 
   sendPreferredLanguage() {
-    const config = this.attributes;
-    const statementModel = new LanguageStatementModel(config);
+    const { attributes } = this;
+    const statementModel = new LanguageStatementModel(attributes);
     const statement = statementModel.getData(Adapt.course, Adapt.config.get('_activeLanguage'));
 
     this.send(statement);
@@ -149,8 +148,8 @@ class StatementModel extends Backbone.Model {
     const modelType = model.get('_type');
     if (modelType === 'course' || modelType === 'page') this.setModelDuration(model);
 
-    const config = this.attributes;
-    const statementModel = new CompletedStatementModel(config);
+    const { attributes } = this;
+    const statementModel = new CompletedStatementModel(attributes);
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -159,8 +158,8 @@ class StatementModel extends Backbone.Model {
   sendExperienced(model) {
     this.setModelDuration(model);
 
-    const config = this.attributes;
-    const statementModel = new ExperiencedStatementModel(config);
+    const { attributes } = this;
+    const statementModel = new ExperiencedStatementModel(attributes);
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -170,7 +169,7 @@ class StatementModel extends Backbone.Model {
   }
 
   sendQuestionAnswered(model) {
-    const config = this.attributes;
+    const { attributes } = this;
     const questionType = model.get('_component');
     let statementClass;
 
@@ -194,15 +193,15 @@ class StatementModel extends Backbone.Model {
         break;
     }
 
-    const statementModel = new statementClass(config);
+    const statementModel = new statementClass(attributes);
     const statement = statementModel.getData(model);
 
     this.send(statement);
   }
 
   sendAssessmentCompleted(model, state) {
-    const config = this.attributes;
-    const statementModel = new AssessmentStatementModel(config);
+    const { attributes } = this;
+    const statementModel = new AssessmentStatementModel(attributes);
     const statement = statementModel.getData(model, state);
 
     this.send(statement);
@@ -212,10 +211,9 @@ class StatementModel extends Backbone.Model {
    * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
    */
   send(statement) {
-    const lrs = this.xAPIWrapper.lrs;
-    const url = lrs.endpoint + 'statements';
+    const { lrs, xapiVersion } = this.xAPIWrapper;
+    const url = `${lrs.endpoint}statements`;
     const data = JSON.stringify(statement);
-    const scope = this;
 
     fetch(url, {
       keepalive: this._terminate,
@@ -223,22 +221,22 @@ class StatementModel extends Backbone.Model {
       headers: {
         'Content-Type': 'application/json',
         Authorization: lrs.auth,
-        'X-Experience-API-Version': this.xAPIWrapper.xapiVersion
+        'X-Experience-API-Version': xapiVersion
       },
       body: data
-    }).then(function(response) {
-      Adapt.log.debug('[' + statement.id + ']: ' + response.status + ' - ' + response.statusText);
+    }).then((response) => {
+      Adapt.log.debug(`[${statement.id}]: ${response.status} - ${response.statusText}`);
 
       if (!response.ok) throw Error(response.statusText);
 
       return response;
-    }).catch(function(error) {
-      scope.showErrorNotification();
+    }).catch(error => {
+      this.showErrorNotification();
     });
   }
 
   setModelSessionStartTime(model, restoredTime) {
-    const time = restoredTime || new Date().getTime();
+    const time = restoredTime || Date.now();
 
     model.set('_sessionStartTime', time);
 
@@ -247,7 +245,7 @@ class StatementModel extends Backbone.Model {
   }
 
   setModelDuration(model) {
-    const elapsedTime = new Date().getTime() - model.get('_sessionStartTime');
+    const elapsedTime = Date.now() - model.get('_sessionStartTime');
 
     // reset `_sessionStartTime` to prevent cumulative additions via multiple calls to this method within the same session - mostly affects course model
     this.setModelSessionStartTime(model);
@@ -309,7 +307,7 @@ class StatementModel extends Backbone.Model {
   }
 
   onPageViewReady(view) {
-    const model = view.model;
+    const { model } = view;
 
     // store model so we have a reference to existing model following a language change
     this._currentPageModel = model;
@@ -318,12 +316,12 @@ class StatementModel extends Backbone.Model {
   }
 
   onRouterLocation() {
-    const previousId = Adapt.location._previousId;
+    const { _previousId: previousId } = location;
 
     // bypass if no page model or no previous location
     if (!this._currentPageModel || !previousId) return;
 
-    const model = Adapt.findById(previousId);
+    const model = data.findById(previousId);
 
     if (model && model.get('_type') === 'page') {
       // only record experienced statements for pages
@@ -351,14 +349,10 @@ class StatementModel extends Backbone.Model {
 
   onAssessmentComplete(state) {
     // create model based on Adapt.course._assessment, otherwise use Adapt.course as base
-    let model;
     const assessmentConfig = Adapt.course.get('_assessment');
-
-    if (assessmentConfig && assessmentConfig._id && assessmentConfig.title) {
-      model = new Backbone.Model(assessmentConfig);
-    } else {
-      model = Adapt.course;
-    }
+    const model = (assessmentConfig && assessmentConfig._id && assessmentConfig.title)
+      ? new Backbone.Model(assessmentConfig)
+      : Adapt.course;
 
     setTimeout(this.sendAssessmentCompleted.bind(this, model, state), 0);
   }
@@ -409,7 +403,7 @@ class StatementModel extends Backbone.Model {
     if (!this._terminate) {
       Adapt.terminate = this._terminate = true;
 
-      const model = Adapt.findById(Adapt.location._currentId);
+      const model = data.findById(location._currentId);
 
       if (model && model.get('_type') !== 'course') {
         this.sendExperienced(model);

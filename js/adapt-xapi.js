@@ -1,7 +1,6 @@
 import Adapt from 'core/js/adapt';
 import wait from 'core/js/wait';
-import offlineStorage from 'core/js/offlineStorage';
-import OfflineStorageExtension from './OfflineStorageHandler';
+import OfflineStorageHandler from './OfflineStorageHandler';
 import ErrorNotificationModel from './ErrorNotificationModel';
 import LaunchModel from './LaunchModel';
 import StatementModel from './StatementModel';
@@ -29,7 +28,7 @@ class xAPI extends Backbone.Controller {
   }
 
   initializeErrorNotification() {
-    const config = this._config._errors;
+    const { _errors: config } = this._config;
 
     this.errorNotificationModel = new ErrorNotificationModel(config);
   }
@@ -96,7 +95,7 @@ class xAPI extends Backbone.Controller {
     if (this._config && this._config._isEnabled) {
       wait.begin();
 
-      offlineStorage.initialize(OfflineStorageExtension);
+      offlineStorage.initialize(OfflineStorageHandler);
 
       this.initializeErrorNotification();
       this.initializeLaunch();
@@ -153,7 +152,6 @@ class xAPI extends Backbone.Controller {
 
   onStateLoaded() {
     wait.end();
-
     offlineStorage.setReadyStatus();
   }
 

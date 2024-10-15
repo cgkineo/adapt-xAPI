@@ -9,18 +9,18 @@ class TerminatedStatementModel extends AbstractStatementModel {
     return statement;
   }
 
-  getVerb(model) {
+  getVerb() {
     const verb = {
       id: 'http://adlnet.gov/expapi/verbs/terminated',
-      display: {}
+      display: {
+        [this.get('recipeLang')]: 'terminated'
+      }
     };
-
-    verb.display[this.get('recipeLang')] = 'terminated';
 
     return verb;
   }
 
-  getActivityType(model) {
+  getActivityType() {
     return ADL.activityTypes.course;
   }
 

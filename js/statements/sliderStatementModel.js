@@ -22,7 +22,7 @@ class SliderStatementModel extends QuestionStatementModel {
       const top = correctRange._top || '';
 
       return [
-        bottom + DELIMETER + top
+        `${bottom}${DELIMITER}${top}`
       ];
     }
   }

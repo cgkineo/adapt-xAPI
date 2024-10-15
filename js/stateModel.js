@@ -1,6 +1,6 @@
 import Adapt from "core/js/adapt";
 import wait from "core/js/wait";
-import OfflineStorageExtension from "./OfflineStorageHandler";
+import OfflineStorageHandler from "./OfflineStorageHandler";
 import * as Async from 'libraries/async.min';
 
 const COMPONENTS_KEY = 'components';
@@ -47,14 +47,14 @@ class StateModel extends Backbone.Model {
   }
 
   setOfflineStorageModel() {
-    const attributes = OfflineStorageExtension.model.attributes;
+    const attributes = OfflineStorageHandler.model.attributes;
 
     for (const key in attributes) {
       this.set(key, attributes[key]);
       this.save(key);
     }
 
-    OfflineStorageExtension.model = this;
+    OfflineStorageHandler.model = this;
   }
 
   setupListeners() {
@@ -95,7 +95,7 @@ class StateModel extends Backbone.Model {
   }
 
   load() {
-    this._getStates((err, data) =>{
+    this._getStates((err, data) => {
       if (err) {
         this.showErrorNotification();
       } else {

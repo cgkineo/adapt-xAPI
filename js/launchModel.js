@@ -20,7 +20,7 @@ class LaunchModel extends Backbone.Model {
   }
 
   initializeLaunch() {
-    const lrs = ADL.XAPIWrapper.lrs;
+    const { lrs } = ADL.XAPIWrapper;
 
     /**
      * can auth be sent through in a different process, e.g. OAuth?
@@ -35,8 +35,7 @@ class LaunchModel extends Backbone.Model {
       // @todo: capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
       const launchData = {
         registration: lrs.registration || null,
-        actor: JSON.parse(lrs.actor)/*,
-        'contextActivities': launchdata.contextActivities */
+        actor: JSON.parse(lrs.actor)
       };
 
       this.set(launchData);

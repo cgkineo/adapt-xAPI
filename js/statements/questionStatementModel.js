@@ -12,10 +12,10 @@ class QuestionStatementModel extends AbstractStatementModel {
   getVerb(model) {
     const verb = {
       id: 'http://adlnet.gov/expapi/verbs/answered',
-      display: {}
+      display: {
+        [this.get('recipeLang')]: 'answered'
+      }
     };
-
-    verb.display[this.get('recipeLang')] = 'answered';
 
     return verb;
   }

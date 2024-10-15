@@ -24,10 +24,10 @@ class TextInputStatementModel extends QuestionStatementModel {
       // 'Where the criteria for a question are complex and correct responses cannot be exhaustively listed, Learning Record Providers are discouraged from using the "correctResponsesPattern" property.'
       if (items > 1) return null;
 
-      correctAnswers = _.pluck(items, '_answers');
+      correctAnswers = items.map(item => item._answers);
     }
 
-    return _.flatten(correctAnswers);
+    return correctAnswers.flat();
   }
 
 }

@@ -43,7 +43,7 @@ class StatementModel extends Backbone.Model {
 
     this.xAPIWrapper = options.wrapper;
 
-    _.extend(this._tracking, options._tracking);
+    Object.assign(this._tracking, options._tracking);
   }
 
   setupListeners() {
@@ -52,10 +52,10 @@ class StatementModel extends Backbone.Model {
     // don't create new listeners for those which are still valid from initial course load
     if (this._isInitialized) return;
 
-    this._onVisibilityChange = _.bind(this.onVisibilityChange, this);
+    this._onVisibilityChange = this.onVisibilityChange.bind(this);
     $(document).on('visibilitychange', this._onVisibilityChange);
 
-    this._onWindowUnload = _.bind(this.onWindowUnload, this);
+    this._onWindowUnload = this.onWindowUnload.bind(this);
     $(window).on('beforeunload unload', this._onWindowUnload);
 
     this.listenTo(Adapt, {
@@ -360,12 +360,12 @@ class StatementModel extends Backbone.Model {
       model = Adapt.course;
     }
 
-    _.defer(_.bind(this.sendAssessmentCompleted, this), model, state);
+    setTimeout(this.sendAssessmentCompleted.bind(this, model, state), 0);
   }
 
   onAssessmentsComplete(state, model) {
     // defer as triggered before last question triggers questionView:recordInteraction
-    _.defer(_.bind(this.sendAssessmentCompleted, this), model, state);
+    setTimeout(this.sendAssessmentCompleted.bind(this, model, state), 0);
   }
 
   onTrackingComplete() {

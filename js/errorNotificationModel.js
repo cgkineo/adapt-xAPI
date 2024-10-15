@@ -42,12 +42,12 @@ class ErrorNotificationModel extends Backbone.Model {
         this._currentNotifyId = id;
 
       } else if (this._currentNotifyId !== id) {
-        this.listenToOnce(Adapt, 'notify:closed', _.partial(this._showNotification, config, id));
+        this.listenToOnce(Adapt, 'notify:closed', this._showNotification.bind(this, config, id));
       }
     } else {
       this._isDeferredLoadingError = true;
 
-      this.listenToOnce(Adapt, 'app:dataLoaded', _.partial(this._showNotification, config, id));
+      this.listenToOnce(Adapt, 'app:dataLoaded', this._showNotification.bind(this, config, id));
     }
   }
 

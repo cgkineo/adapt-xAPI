@@ -48,7 +48,9 @@ export default class AbstractStatementModel extends Backbone.Model {
 
     const extensions = this.getObjectExtensions(model);
 
-    if (!(_.isEmpty(extensions))) definition.extensions = extensions;
+    if (extensions && Object.keys(extensions).length > 0) {
+      definition.extensions = extensions;
+    }
 
     object.definition = definition;
 
@@ -81,7 +83,7 @@ export default class AbstractStatementModel extends Backbone.Model {
   }
 
   getContextActivities(model) {
-    const contextActivities = _.clone(this.get('contextActivities'));
+    const contextActivities = { ...this.get('contextActivities') };
     contextActivities.grouping = this.getContextActivitiesGrouping(model);
 
     return contextActivities;
@@ -114,7 +116,7 @@ export default class AbstractStatementModel extends Backbone.Model {
       const isContentObject = modelType === 'menu' || modelType === 'page';
 
       if (isContentObject) return model;
-    });dex
+    });
 
     contentObjects.reverse();
 

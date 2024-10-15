@@ -43,7 +43,7 @@ class LaunchModel extends Backbone.Model {
 
       this.triggerLaunchInitialized();
     } else {
-      ADL.launch(_.bind(this.onADLLaunchAttempt, this), false);
+      ADL.launch(this.onADLLaunchAttempt.bind(this), false);
     }
   }
 
@@ -56,9 +56,9 @@ class LaunchModel extends Backbone.Model {
   }
 
   triggerLaunchInitialized() {
-    _.defer(function() {
+    setTimeout(function() {
       Adapt.trigger('xapi:launchInitialized');
-    });
+    }, 0);
   }
 
   onADLLaunchAttempt(err, launchdata, wrapper) {
@@ -77,7 +77,9 @@ class LaunchModel extends Backbone.Model {
       };
 
       const contextActivities = launchdata.contextActivities;
-      if (!(_.isEmpty(contextActivities))) launchData.contextActivities = contextActivities;
+      if (contextActivities && Object.keys(contextActivities).length > 0) {
+        launchData.contextActivities = contextActivities;
+      }
 
       this.set(launchData);
 

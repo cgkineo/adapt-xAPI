@@ -32,8 +32,8 @@ class QuestionStatementModel extends AbstractStatementModel {
       interactionType: model.getResponseType()
     };
 
-    _.extend(definition, this.getInteractionObject(model));
-    _.extend(object.definition, definition);
+    Object.assign(definition, this.getInteractionObject(model));
+    Object.assign(object.definition, definition);
 
     return object;
   }
@@ -66,7 +66,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   getObjectExtensions(model) {
     const extensions = super.getObjectExtensions.apply(this, arguments);
 
-    _.extend(extensions, {
+    Object.assign(extensions, {
       'https://adaptlearning.org/xapi/extension/component': model.get('_component')
     });
 
@@ -88,7 +88,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   getContextExtensions(model) {
     const extensions = super.getObjectExtensions.apply(this, arguments);
 
-    _.extend(extensions, {
+    Object.assign(extensions, {
       'http://id.tincanapi.com/extension/attempt-id': this.getAttempt(model)
     });
 

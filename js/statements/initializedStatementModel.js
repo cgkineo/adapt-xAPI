@@ -20,7 +20,7 @@ class InitializedStatementModel extends AbstractStatementModel {
   getContextExtensions(model, state) {
     const extensions = super.getContextExtensions.apply(this, arguments);
 
-    _.extend(extensions, {
+    Object.assign(extensions, {
       'http://id.tincanapi.com/extension/browser-info': {
         'user-agent-header': navigator.userAgent.toString()
       }

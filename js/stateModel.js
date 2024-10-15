@@ -304,9 +304,9 @@ class StateModel extends Backbone.Model {
     let queue = this._queues[id];
 
     if (!queue) {
-      queue = this._queues[id] = Async.queue(_.bind(function(id, callback) {
+      queue = this._queues[id] = Async.queue(function(id, callback) {
         this.save(id, callback);
-      }, this), 1);
+      }.bind(this), 1);
 
       queue.drain = function() {
         Adapt.log.debug('State API queue cleared for ' + id);
@@ -335,7 +335,12 @@ class StateModel extends Backbone.Model {
 
         // account for models being removed in content without xAPI activityId or registration being changed
         if (model) {
-          const restoreData = _.omit(data, '_id');
+          const restoreData = Object.keys(data).reduce((result, key) => {
+            if (key !== '_id') {
+              result[key] = data[key];
+            }
+            return result;
+          }, {});
 
           model.set(restoreData);
         }
@@ -392,9 +397,9 @@ class StateModel extends Backbone.Model {
   onDataReady() {
     const config = Adapt.config.get('_xapi');
     if (config?._isRestoreEnabled === false) return;
-    wait.queue(_.bind(function() {
+    wait.queue(function() {
       this.restore();
-    }, this));
+    }.bind(this));
   }
 
   onAdaptInitialize() {

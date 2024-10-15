@@ -3,7 +3,7 @@ import AbstractStatementModel from './abstractStatementModel';
 class ExperiencedStatementModel extends AbstractStatementModel {
 
   getData(model) {
-    const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+    const statement = super.getData.apply(this, arguments);
     statement.result = this.getResult(model);
 
     return statement;

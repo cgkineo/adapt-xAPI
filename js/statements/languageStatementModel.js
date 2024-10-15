@@ -3,7 +3,7 @@ import PreferredStatementModel from './preferredStatementModel';
 class LanguageStatementModel extends PreferredStatementModel {
 
   getData(model, lang) {
-    const statement = PreferredStatementModel.prototype.getData.apply(this, arguments);
+    const statement = super.getData.apply(this, arguments);
 
     statement.result = this.getResult(model, lang);
 

@@ -3,7 +3,7 @@ import AbstractStatementModel from './abstractStatementModel';
 class AssessmentStatementModel extends AbstractStatementModel {
 
   getData(model, state) {
-    const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+    const statement = super.getData.apply(this, arguments);
     statement.verb = this.getVerb(state);
     statement.result = this.getResult(state);
 

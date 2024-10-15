@@ -114,7 +114,7 @@ export default class AbstractStatementModel extends Backbone.Model {
       const isContentObject = modelType === 'menu' || modelType === 'page';
 
       if (isContentObject) return model;
-    });
+    });dex
 
     contentObjects.reverse();
 

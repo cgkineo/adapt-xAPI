@@ -3,7 +3,7 @@ import AbstractStatementModel from './abstractStatementModel';
 class CompletedStatementModel extends AbstractStatementModel {
 
   getData(model) {
-    const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+    const statement = super.getData.apply(this, arguments);
 
     const modelType = model.get('_type');
     if (modelType === 'course' || modelType === 'page') statement.result = this.getResult(model);

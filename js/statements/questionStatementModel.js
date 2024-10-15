@@ -3,7 +3,7 @@ import AbstractStatementModel from './abstractStatementModel';
 class QuestionStatementModel extends AbstractStatementModel {
 
   getData(model) {
-    const statement = AbstractStatementModel.prototype.getData.apply(this, arguments);
+    const statement = super.getData.apply(this, arguments);
     statement.result = this.getResult(model);
 
     return statement;
@@ -25,7 +25,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   }
 
   getObject(model) {
-    const object = AbstractStatementModel.prototype.getObject.apply(this, arguments);
+    const object = super.getObject.apply(this, arguments);
 
     const definition = {
       description: this.getDescription(model),
@@ -64,7 +64,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   }
 
   getObjectExtensions(model) {
-    const extensions = AbstractStatementModel.prototype.getObjectExtensions.apply(this, arguments);
+    const extensions = super.getObjectExtensions.apply(this, arguments);
 
     _.extend(extensions, {
       'https://adaptlearning.org/xapi/extension/component': model.get('_component')
@@ -74,7 +74,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   }
 
   getContextActivities(model) {
-    const contextActivities = AbstractStatementModel.prototype.getContextActivities.apply(this, arguments);
+    const contextActivities = super.getContextActivities.apply(this, arguments);
 
     if (model.get('_isPartOfAssessment')) {
       contextActivities.parent = [
@@ -86,7 +86,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   }
 
   getContextExtensions(model) {
-    const extensions = AbstractStatementModel.prototype.getObjectExtensions.apply(this, arguments);
+    const extensions = super.getObjectExtensions.apply(this, arguments);
 
     _.extend(extensions, {
       'http://id.tincanapi.com/extension/attempt-id': this.getAttempt(model)
@@ -97,7 +97,7 @@ class QuestionStatementModel extends AbstractStatementModel {
 
   getAssessmentContextActivity(model) {
     const assessment = model.findAncestor('articles');
-    const object = AbstractStatementModel.prototype.getObject.call(this, assessment);
+    const object = super.getObject.call(this, assessment);
     object.definition.type = ADL.activityTypes.assessment;
 
     return object;

@@ -18,7 +18,7 @@ class InitializedStatementModel extends AbstractStatementModel {
   }
 
   getContextExtensions(model, state) {
-    const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
+    const extensions = super.getContextExtensions.apply(this, arguments);
 
     _.extend(extensions, {
       'http://id.tincanapi.com/extension/browser-info': {

@@ -167,7 +167,7 @@ class StateModel extends Backbone.Model {
   }
 
   set(id, value) {
-    Backbone.Model.prototype.set.apply(this, arguments);
+    super.set.apply(this, arguments);
 
     // @todo: save every time the value changes, or only on specific events?
     if (this._isLoaded) {

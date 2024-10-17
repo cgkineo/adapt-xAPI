@@ -1,5 +1,6 @@
 import Adapt from 'core/js/adapt';
 import wait from 'core/js/wait';
+import offlineStorage from 'core/js/offlineStorage';
 import OfflineStorageHandler from './OfflineStorageHandler';
 import ErrorNotificationModel from './ErrorNotificationModel';
 import LaunchModel from './LaunchModel';

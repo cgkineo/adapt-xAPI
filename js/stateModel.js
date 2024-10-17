@@ -294,7 +294,7 @@ class StateModel extends Backbone.Model {
     if (!queue) {
       queue = this._queues[id] = Async.queue((id, callback) => {
         this.save(id, callback);
-      }).bind(this), 1;
+      }, 1);
 
       queue.drain = () => {
         Adapt.log.debug('State API queue cleared for ' + id);

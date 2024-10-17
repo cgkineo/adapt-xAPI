@@ -38,8 +38,8 @@ class StatementModel extends Backbone.Model {
     });
     
     // Instance Variables
-    const { xAPIWrapper, _tracking } = options;
-    this.xAPIWrapper = xAPIWrapper;
+    const { wrapper, _tracking } = options;
+    this.xAPIWrapper = wrapper;
     this._tracking = { ...this.defaults()._tracking, ..._tracking };
 
     Object.assign(this._tracking, options._tracking);

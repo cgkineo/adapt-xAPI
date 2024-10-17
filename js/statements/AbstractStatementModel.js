@@ -94,9 +94,9 @@ export default class AbstractStatementModel extends Backbone.Model {
 
     grouping.push(this.getCourseContextActivity());
 
-    const modelType = model.get('_type');
+    const modelType = model?.get('_type');
 
-    if (modelType && modelType !== 'course') {
+    if (modelType !== 'course') {
       grouping.push.apply(grouping, this.getContentObjectsContextActivities(model));
     }
 
@@ -161,7 +161,7 @@ export default class AbstractStatementModel extends Backbone.Model {
   getUniqueIri(model) {
     let iri = this.get('activityId');
 
-    if (model && model.get('_type') !== 'course') {
+    if (model?.get('_type') !== 'course') {
       iri += '/' + model.get('_id');
     }
 

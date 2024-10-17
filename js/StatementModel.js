@@ -323,7 +323,7 @@ class StatementModel extends Backbone.Model {
 
     const model = data.findById(previousId);
 
-    if (model && model.get('_type') === 'page') {
+    if (model?.get('_type') === 'page') {
       // only record experienced statements for pages
       this.sendExperienced(model);
     }
@@ -350,7 +350,7 @@ class StatementModel extends Backbone.Model {
   onAssessmentComplete(state) {
     // create model based on Adapt.course._assessment, otherwise use Adapt.course as base
     const assessmentConfig = Adapt.course.get('_assessment');
-    const model = (assessmentConfig && assessmentConfig._id && assessmentConfig.title)
+    const model = (assessmentConfig?._id && assessmentConfig?.title)
       ? new Backbone.Model(assessmentConfig)
       : Adapt.course;
 
@@ -405,7 +405,7 @@ class StatementModel extends Backbone.Model {
 
       const model = data.findById(location._currentId);
 
-      if (model && model.get('_type') !== 'course') {
+      if (model?.get('_type') !== 'course') {
         this.sendExperienced(model);
       }
 

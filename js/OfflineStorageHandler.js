@@ -37,7 +37,7 @@ const OfflineStorageHandler = {
     if (openid) return openid;
     if (mbox) return mbox;
     if (mbox_sha1sum) return mbox_sha1sum;
-    if (account && account.homePage && account.name) {
+    if (account?.homePage && account?.name) {
       return `${account.homePage}:${account.name}`;
     }
     return null;

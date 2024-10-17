@@ -93,7 +93,7 @@ class xAPI extends Backbone.Controller {
   onPrepareOfflineStorage() {
     this._config = Adapt.config.get('_xapi');
 
-    if (this._config && this._config._isEnabled) {
+    if (this._config?._isEnabled) {
       wait.begin();
 
       offlineStorage.initialize(OfflineStorageHandler);
@@ -139,7 +139,7 @@ class xAPI extends Backbone.Controller {
   onLanguageChanged(lang) {
     const languageConfig = Adapt.config.get('_languagePicker');
 
-    if (languageConfig && languageConfig._isEnabled && this._restoredLanguage !== lang && this._currentLanguage !== lang) {
+    if (languageConfig?._isEnabled && this._restoredLanguage !== lang && this._currentLanguage !== lang) {
       // only reset if language has changed since the course was started - not neccessary before
       const resetState = this._isInitialized && !languageConfig._restoreStateOnLanguageChange;
 

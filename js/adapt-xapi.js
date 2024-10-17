@@ -16,7 +16,6 @@ class xAPI extends Backbone.Controller {
       _config: null,
       _activityId: null,
       _restoredLanguage: null,
-      _currentLanguage: null,
       errorNotificationModel: null,
       launchModel: null,
       statementModel: null,
@@ -136,19 +135,17 @@ class xAPI extends Backbone.Controller {
     this._restoredLanguage = offlineStorage.get('lang');
   }
 
-  onLanguageChanged(lang) {
+  onLanguageChanged(newLanguage, previousLanguage) {
     const languageConfig = Adapt.config.get('_languagePicker');
 
-    if (languageConfig?._isEnabled && this._restoredLanguage !== lang && this._currentLanguage !== lang) {
+    if (languageConfig?._isEnabled && this._restoredLanguage !== newLanguage && newLanguage !== previousLanguage) {
       // only reset if language has changed since the course was started - not neccessary before
       const resetState = this._isInitialized && !languageConfig._restoreStateOnLanguageChange;
-
       // @todo: only send when via a user selection? If `"_showOnCourseLoad": false`, this will still be triggered
-      Adapt.trigger('xapi:languageChanged', lang, resetState);
+      Adapt.trigger('xapi:languageChanged', newLanguage, resetState);
     }
 
     this._restoredLanguage = null;
-    this._currentLanguage = lang;
   }
 
   onStateLoaded() {

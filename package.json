@@ -1,5 +1,5 @@
 {
-  "name": "adapt-kineo-xAPI",
+  "name": "adapt-xAPI",
   "version": "2.1.4",
   "framework": ">=5.19.1",
   "homepage": "https://github.com/cgkineo/adapt-xAPI",

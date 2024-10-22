@@ -1,6 +1,7 @@
 import Adapt from "core/js/adapt";
 import data from "core/js/data";
 import location from "core/js/location";
+import logging from "core/js/logging";
 import InitializedStatementModel from "./statements/InitializedStatementModel";
 import TerminatedStatementModel from "./statements/TerminatedStatementModel";
 import LanguageStatementModel from "./statements/LanguageStatementModel";
@@ -225,7 +226,7 @@ class StatementModel extends Backbone.Model {
       },
       body: data
     }).then((response) => {
-      Adapt.log.debug(`[${statement.id}]: ${response.status} - ${response.statusText}`);
+      logging.debug(`[${statement.id}]: ${response.status} - ${response.statusText}`);
 
       if (!response.ok) throw Error(response.statusText);
 

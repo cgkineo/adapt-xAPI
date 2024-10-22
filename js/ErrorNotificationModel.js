@@ -1,5 +1,6 @@
 import Adapt from "core/js/adapt";
 import wait from "core/js/wait";
+import logging from "core/js/logging";
 
 const LAUNCH_ERROR_ID = 'launch-error';
 const ACTIVITYID_ERROR_ID = 'activityId-error';
@@ -32,7 +33,7 @@ class ErrorNotificationModel extends Backbone.Model {
   _showNotification(config, id) {
     if (this._isReady) {
       if (!this._isNotifyOpen) {
-        Adapt.log.error(config.title);
+        logging.error(config.title);
 
         const notifyConfig = this._getNotifyConfig(config, id);
 

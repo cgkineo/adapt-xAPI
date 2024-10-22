@@ -1,4 +1,5 @@
 import Adapt from "core/js/adapt";
+import logging from "core/js/logging";
 import wait from "core/js/wait";
 import OfflineStorageHandler from "./OfflineStorageHandler";
 import * as Async from 'libraries/async.min';
@@ -192,8 +193,6 @@ class StateModel extends Backbone.Model {
       },
       body: data
     }).then((response) => {
-      // if (response) Adapt.log.debug(response);
-
       if (!response.ok) throw Error(response.statusText);
 
       if (callback) callback();
@@ -261,7 +260,7 @@ class StateModel extends Backbone.Model {
 
       return response.json();
     }).then((data) => {
-      if (data) Adapt.log.debug(data);
+      if (data) logging.debug(data);
 
       if (callback) callback(null, data);
     }).catch((error) => {
@@ -297,7 +296,7 @@ class StateModel extends Backbone.Model {
       }, 1);
 
       queue.drain = () => {
-        Adapt.log.debug('State API queue cleared for ' + id);
+        logging.debug('State API queue cleared for ' + id);
       };
     }
 

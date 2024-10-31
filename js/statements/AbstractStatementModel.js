@@ -10,7 +10,6 @@ export default class AbstractStatementModel extends Backbone.Model {
       activityId: null,
       registration: null,
       revision: null,
-      contentRelease: null,
       actor: null,
       contextActivities: {
         grouping: []

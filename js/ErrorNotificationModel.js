@@ -1,4 +1,5 @@
 import Adapt from "core/js/adapt";
+import notify from 'core/js/notify';
 import wait from "core/js/wait";
 import logging from "core/js/logging";
 
@@ -33,15 +34,14 @@ class ErrorNotificationModel extends Backbone.Model {
   _showNotification(config, id) {
     if (this._isReady) {
       if (!this._isNotifyOpen) {
-        logging.error(config.title);
+        logging.error(config?.title);
 
         const notifyConfig = this._getNotifyConfig(config, id);
 
-        Adapt.trigger('notify:popup', notifyConfig);
+        notify.popup(notifyConfig);
 
         this._isNotifyOpen = true;
         this._currentNotifyId = id;
-
       } else if (this._currentNotifyId !== id) {
         this.listenToOnce(Adapt, 'notify:closed', this._showNotification.bind(this, config, id));
       }
@@ -54,9 +54,9 @@ class ErrorNotificationModel extends Backbone.Model {
 
   _getNotifyConfig(config, id) {
     const notifyConfig = {
-      title: config.title,
-      body: config.body,
-      _classes: 'xAPIError ' + id + ' ' + config._classes,
+      title: config?.title,
+      body: config?.body,
+      _classes: `xAPIError ${id} ${config._classes}`,
       _isxAPIError: true
     };
 

@@ -8,7 +8,7 @@ Please refer to [example.json](example.json) for the JSON snippet which should b
 
 | Property | Type | Default | Description |
 |--|--|--|--|
-| \_isEnabled | Boolean | `false` | Set to `true` to enable the extension.
+| \_isEnabled | Boolean | `true` | Set to `true` to enable the extension.
 | \_activityId | String | `""` | Used to populate the Activity id included in _tincan.xml_ and for use in the Statement and State API. The value will be overriden if changed on the hosting environment.
 | \_revision | String | `""` | This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity id is recommended.
 | \_tracking | Object | `{ _storeQuestionResponses: true, _questionInteractions: true, _assessmentsCompletion: false, _assessmentCompletion: true }` | <ul><li>\_storeQuestionResponses: Restore question responses across browser sessions.</li><li>\_questionInteractions: Record statements for questions.</li><li>\_assessmentsCompletion: Record a completed statement on completion of individual assessments.</li><li>\_assessmentCompletion: Record a completed statement on completion of all assessments combined.</li></ul>

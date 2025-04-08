@@ -40,7 +40,8 @@ class QuestionStatementModel extends AbstractStatementModel {
 
   getDescription(model) {
     const description = {};
-    description[this.get('lang')] = model.get('body');
+    const descriptionSelector = model.get('ariaQuestion') ? model.get('ariaQuestion') : model.get('body');
+    description[this.get('lang')] = descriptionSelector;
 
     return description;
   }
@@ -52,7 +53,12 @@ class QuestionStatementModel extends AbstractStatementModel {
       const interactionActivity = interactionObject[key];
 
       interactionActivity.forEach(function(activity) {
-        if (activity.hasOwnProperty('description')) {
+        const obj = {
+          hasOwnProperty: () => false,
+          key: 'description'
+        };
+
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
           const description = {};
           description[this.get('lang')] = activity.description;
           activity.description = description;
@@ -89,7 +95,8 @@ class QuestionStatementModel extends AbstractStatementModel {
     const extensions = super.getObjectExtensions.apply(this, arguments);
 
     Object.assign(extensions, {
-      'http://id.tincanapi.com/extension/attempt-id': this.getAttempt(model)
+      'http://id.tincanapi.com/extension/attempt-id': this.getAttempt(model),
+      'http://id.tincanapi.com/extension/tags': model.get('_webtags')
     });
 
     return extensions;
@@ -123,7 +130,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   getAttempt(model) {
     return model.get('_attempts') - model.get('_attemptsLeft');
   }
-  
+
 }
 
 export default QuestionStatementModel;

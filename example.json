@@ -1,35 +1,43 @@
 // to be added to config.json
-{
-	"_xapi": {
-        "_isEnabled": true,
-        "_comment": "included in tincan.xml. _activityId will be overriden if changed on the hosting environment.",
-	"_activityId": "https://example.com/unique_identifier",
-	"_revision": "",
-        "_tracking": {
-            "_storeQuestionResponses": true,
-            "_questionInteractions": true,
-            "_assessmentsCompletion": false,
-            "_assessmentCompletion": true
+"_xapi": {
+    "_isEnabled": true,
+    "_isRestoreEnabled": false,
+    "_isDebugModeEnabled": false,
+    "_comment": "included in tincan.xml. _activityId will be overriden if changed on the hosting environment.",
+    "_activityId": "https://example.com/unique_identifier",
+    "_revision": "",
+    "_contentRelease": "0.0.0",
+    "_tracking": {
+        "_storeQuestionResponses": true,
+        "_questionInteractions": true,
+        "_assessmentsCompletion": false,
+        "_assessmentCompletion": true,
+        "_focusedStates": true,
+        "_navbar": true,
+        "_video": true,
+        "_flexibleButtons": true,
+        "_visua11y": true,
+        "_connectionErrors": true,
+        "_inactivityTimout": true
+    },
+    "_errors": {
+        "_launch": {
+            "title": "xAPI could not be initialized",
+            "body": "This activity will not be tracked.",
+            "_classes": "",
+            "_isCancellable": true
         },
-        "_errors": {
-            "_launch": {
-                "title": "xAPI could not be initialized",
-                "body": "This activity will not be tracked.",
-                "_classes": "",
-                "_isCancellable": true
-            },
-            "_lrs": {
-                "title": "LRS could not be found",
-                "body": "There was a problem communicating with the LRS. Tracking data may be lost if you continue with this session.",
-                "_classes": "",
-                "_isCancellable": true
-            },
-            "_activityId": {
-                "title": "Missing Activity IRI",
-                "body": "An Activity id has not been set. This activity will not be tracked.",
-                "_classes": "",
-                "_isCancellable": true
-            }
+        "_lrs": {
+            "title": "LRS could not be found",
+            "body": "There was a problem communicating with the LRS. Tracking data may be lost if you continue with this session.",
+            "_classes": "",
+            "_isCancellable": true
+        },
+        "_activityId": {
+            "title": "Missing Activity IRI",
+            "body": "An Activity id has not been set. This activity will not be tracked.",
+            "_classes": "",
+            "_isCancellable": true
         }
     }
 }

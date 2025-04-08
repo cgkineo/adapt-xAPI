@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 const OfflineStorageHandler = {
 
   // will be set to StateModel once ready - store values until then
@@ -43,6 +44,6 @@ const OfflineStorageHandler = {
     return null;
   }
 
-}
+};
 
 export default OfflineStorageHandler;

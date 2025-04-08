@@ -1,4 +1,5 @@
-import Adapt from "core/js/adapt";
+import Adapt from 'core/js/adapt';
+import wait from 'core/js/wait';
 
 class LaunchModel extends Backbone.Model {
 
@@ -20,6 +21,8 @@ class LaunchModel extends Backbone.Model {
   }
 
   initializeLaunch() {
+    wait.begin();
+
     const { lrs } = ADL.XAPIWrapper;
 
     /**
@@ -66,42 +69,34 @@ class LaunchModel extends Backbone.Model {
       400 = launch already initialized
       404 = launch removed
     */
-    if (err) {
-      if (performance.navigation.type === 1) {
-        this.onReload();
-        return;
-      }
-    
-      if (this._retryCount < this._retryLimit) {
-        this._retryCount++;
-        this.initializeLaunch();
-        return;
-      }
-    
+    if (!err) {
+      this._xAPIWrapper = wrapper;
+
+      // can ADL launch include registration?
+      const launchData = {
+        registration: launchdata.registration || null,
+        actor: launchdata.actor
+      };
+
+      const contextActivities = launchdata.contextActivities;
+      if (!(_.isEmpty(contextActivities))) launchData.contextActivities = contextActivities;
+
+      this.set(launchData);
+
+      // store launch server details should browser be reloaded and launch server session still initialized
+      sessionStorage.setItem('lrs', JSON.stringify(wrapper.lrs));
+      sessionStorage.setItem('launchData', JSON.stringify(launchData));
+
+      this.triggerLaunchInitialized();
+    } else if (performance.navigation.type === 1) {
+      this.onReload();
+    } else if (this._retryCount < this._retryLimit) {
+      this._retryCount++;
+
+      this.initializeLaunch();
+    } else {
       this.onLaunchFail();
-      return;
     }
-    
-    this._xAPIWrapper = wrapper;
-    
-    // can ADL launch include registration?
-    const launchData = {
-      registration: launchdata.registration || null,
-      actor: launchdata.actor
-    };
-    
-    const contextActivities = launchdata.contextActivities;
-    if (contextActivities && Object.keys(contextActivities).length > 0) {
-      launchData.contextActivities = contextActivities;
-    }
-    
-    this.set(launchData);
-    
-    // store launch server details should browser be reloaded and launch server session still initialized
-    sessionStorage.setItem('lrs', JSON.stringify(wrapper.lrs));
-    sessionStorage.setItem('launchData', JSON.stringify(launchData));
-    
-    this.triggerLaunchInitialized();
   }
 
   // if launch session expired, will the next request to the launch server produce an error notification for the user?

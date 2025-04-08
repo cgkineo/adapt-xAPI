@@ -1,5 +1,5 @@
 const Utils = {
-  
+
   getISO8601Duration(milliseconds) {
     const centiseconds = Math.round(milliseconds / 10);
     const hours = Math.floor(centiseconds / 360000);
@@ -56,6 +56,6 @@ const Utils = {
   padZeros(num) {
     return num < 10 ? '0' + num : num.toString();
   }
-}
+};
 
 export default Utils;

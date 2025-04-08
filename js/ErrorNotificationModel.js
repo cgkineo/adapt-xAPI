@@ -1,7 +1,7 @@
-import Adapt from "core/js/adapt";
+import Adapt from 'core/js/adapt';
 import notify from 'core/js/notify';
-import wait from "core/js/wait";
-import logging from "core/js/logging";
+import wait from 'core/js/wait';
+import logging from 'core/js/logging';
 
 const LAUNCH_ERROR_ID = 'launch-error';
 const ACTIVITYID_ERROR_ID = 'activityId-error';

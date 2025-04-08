@@ -1,5 +1,5 @@
-import Adapt from "core/js/adapt";
-import Utils from "../Utils";
+import Adapt from 'core/js/adapt';
+import Utils from '../Utils';
 
 export default class AbstractStatementModel extends Backbone.Model {
 
@@ -10,6 +10,7 @@ export default class AbstractStatementModel extends Backbone.Model {
       activityId: null,
       registration: null,
       revision: null,
+      contentRelease: null,
       actor: null,
       contextActivities: {
         grouping: []
@@ -110,18 +111,22 @@ export default class AbstractStatementModel extends Backbone.Model {
   }
 
   getContentObjectsContextActivities(model) {
-    const contentObjects = model.getAncestorModels(true).filter(function(model) {
+    const contentObjects = model.getAncestorModels(true).reduce((activities, model) => {
       const modelType = model.get('_type');
       const isContentObject = modelType === 'menu' || modelType === 'page';
 
-      if (isContentObject) return model;
+      if (isContentObject) {
+        activities.push(model);
+      }
+
+      return activities;
     });
 
     contentObjects.reverse();
 
     const activities = [];
 
-    contentObjects.forEach(function(model) {
+    contentObjects.forEach((model) => {
       activities.push(this.getContentObjectContextActivity(model));
     }, this);
 
@@ -141,10 +146,14 @@ export default class AbstractStatementModel extends Backbone.Model {
   getContextExtensions(model, state) {
     const buildConfig = Adapt.build;
     const frameworkVersion = (buildConfig) ? buildConfig.get('package').version : '<3.0.0';
+    const specificationRevision = this.get('revision');
+    const contentRelease = this.get('contentRelease');
 
     const extensions = {
       'https://adaptlearning.org/xapi/extension/framework': 'Adapt',
-      'https://adaptlearning.org/xapi/extension/framework_version': frameworkVersion
+      'https://adaptlearning.org/xapi/extension/framework_version': frameworkVersion,
+      'https://adaptlearning.org/xapi/extension/specification_revision': specificationRevision,
+      'https://adaptlearning.org/xapi/extension/content_release': contentRelease
     };
 
     return extensions;

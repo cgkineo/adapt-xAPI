@@ -8,7 +8,7 @@ import StatementModel from './StatementModel';
 import StateModel from './StateModel';
 import 'libraries/xapiwrapper.min';
 
-class xAPI extends Backbone.Controller {
+class XAPI extends Backbone.Controller {
 
   defaults() {
     return {
@@ -58,10 +58,15 @@ class xAPI extends Backbone.Controller {
   }
 
   initializeStatement() {
+    const AdaptPlugins = Adapt.build.get('plugins');
+    const xAPIPlugin = AdaptPlugins.find(plugin => plugin.name === 'adapt-xAPI');
+    const xAPIVersion = xAPIPlugin ? xAPIPlugin.version : null;
+
     const config = {
       activityId: this.getActivityId(),
       registration: this.launchModel.get('registration'),
-      revision: this._config._revision || null,
+      revision: this._config._revision || xAPIVersion || null,
+      contentRelease: this._config._contentRelease || null,
       actor: this.launchModel.get('actor'),
       contextActivities: this.launchModel.get('contextActivities')
     };
@@ -165,6 +170,6 @@ class xAPI extends Backbone.Controller {
 
 }
 
-Adapt.xapi = new xAPI();
+Adapt.xapi = new XAPI();
 
 export default Adapt.xapi;

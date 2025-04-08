@@ -1,14 +1,15 @@
 import PreferredStatementModel from './PreferredStatementModel';
 
-class LanguageStatementModel extends PreferredStatementModel {
-
+class PreferredLanguageStatementModel extends PreferredStatementModel {
   getData(model, lang) {
-    const statement = super.getData.apply(this, arguments);
+    const statement = PreferredStatementModel.prototype.getData.apply(this, arguments);
+
     statement.result = this.getResult(model, lang);
+
     return statement;
   }
 
-  getActivityType() {
+  getActivityType(model) {
     return ADL.activityTypes.course;
   }
 
@@ -21,4 +22,4 @@ class LanguageStatementModel extends PreferredStatementModel {
   }
 }
 
-export default LanguageStatementModel;
+export default PreferredLanguageStatementModel;

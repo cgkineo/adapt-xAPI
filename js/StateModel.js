@@ -35,12 +35,15 @@ class StateModel extends Backbone.Model {
       'xapi:stateReset': this.onStateReset
     });
 
+    // Instance Variables
+    this._queues = this.get('_queues');
     this.xAPIWrapper = options.wrapper;
-
-    _.extend(this._tracking, options._tracking);
+    this._tracking = {
+      ...this.defaults()._tracking,
+      ...options._tracking
+    };
 
     this.setOfflineStorageModel();
-
     this.load();
   }
 
@@ -259,7 +262,8 @@ class StateModel extends Backbone.Model {
 
       return response.json();
     }).then((data) => {
-      // if (data) logging.debug(data);
+      if (data) logging.debug(data);
+
       if (callback) callback(null, data);
     }).catch((error) => {
       if (error) {
@@ -321,7 +325,12 @@ class StateModel extends Backbone.Model {
 
         // account for models being removed in content without xAPI activityId or registration being changed
         if (model) {
-          const restoreData = _.omit(data, '_id');
+          const restoreData = Object.keys(data).reduce((result, key) => {
+            if (key !== '_id') {
+              result[key] = data[key];
+            }
+            return result;
+          }, {});
 
           model.set(restoreData);
         }
@@ -376,9 +385,11 @@ class StateModel extends Backbone.Model {
   }
 
   onDataReady() {
-    wait.queue(_.bind(function() {
+    const config = Adapt.config.get('_xapi');
+    if (config?._isRestoreEnabled === false) return;
+    wait.queue(() => {
       this.restore();
-    }, this));
+    }).bind(this);
   }
 
   onAdaptInitialize() {

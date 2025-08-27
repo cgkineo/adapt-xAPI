@@ -32,10 +32,22 @@ class LaunchModel extends Backbone.Model {
       // add trailing slash if missing in endpoint
       lrs.endpoint = lrs.endpoint.replace(/\/?$/, '/');
 
+      const actor = JSON.parse(lrs.actor);
+      // convert actor for Rustici launch - https://github.com/RusticiSoftware/launch/blob/master/lms_lrs.md
+      if (Array.isArray(actor.name)) actor.name = actor.name[0];
+      if (Array.isArray(actor.mbox)) actor.mbox = actor.mbox[0];
+      if (Array.isArray(actor.account)) {
+        const account = actor.account[0];
+        actor.account = {
+          homePage: account.homePage ?? account.accountServiceHomePage,
+          name: account.name ?? account.accountName
+        };
+      }
+
       // @todo: capture grouping URL params - unsure what data this actually contains based on specs - unlike contextActivities for ADL Launch
       const launchData = {
         registration: lrs.registration || null,
-        actor: JSON.parse(lrs.actor)
+        actor
       };
 
       this.set(launchData);

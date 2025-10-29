@@ -28,7 +28,6 @@ class StateModel extends Backbone.Model {
   }
 
   initialize(attributes, options) {
-
     this.listenTo(Adapt, {
       'adapt:initialize': this.onAdaptInitialize,
       'xapi:languageChanged': this.onLanguageChanged,
@@ -42,6 +41,9 @@ class StateModel extends Backbone.Model {
       ...this.defaults()._tracking,
       ...options._tracking
     };
+
+    const xapiConfig = Adapt.config.get('_xapi');
+    this.debugMode = xapiConfig._isDebugModeEnabled;
 
     this.setOfflineStorageModel();
     this.load();
@@ -100,6 +102,8 @@ class StateModel extends Backbone.Model {
       if (err) {
         this.showErrorNotification();
       } else {
+        wait.begin();
+
         const states = data;
 
         Async.each(states, (id, callback) => {
@@ -123,6 +127,8 @@ class StateModel extends Backbone.Model {
 
             this.listenTo(Adapt, 'app:dataReady', this.onDataReady);
           }
+
+          wait.end();
         });
       }
     });
@@ -158,7 +164,6 @@ class StateModel extends Backbone.Model {
     this._restoreDurationsData();
 
     this._isRestored = true;
-
     Adapt.trigger('xapi:stateReady');
   }
 
@@ -205,7 +210,7 @@ class StateModel extends Backbone.Model {
         logging.error('An error occurred:', error);
       }
       this.showErrorNotification();
-      if (callback) callback();
+      if (callback) callback(error); // Pass the error to the callback for further handling
       if (!this._isRestored) wait.end();
     });
   }
@@ -248,7 +253,14 @@ class StateModel extends Backbone.Model {
   }
 
   _fetchState(stateId, callback) {
-    fetch(this._getStateURL(stateId), {
+    const url = this._getStateURL(stateId);
+
+    if (this.debugMode) {
+      logging.debug('Fetching state from:', url);
+      logging.debug('Auth:', this.xAPIWrapper.lrs.auth ? 'Present' : 'Missing');
+    }
+
+    fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -258,19 +270,51 @@ class StateModel extends Backbone.Model {
         Pragma: 'no-cache'
       }
     }).then((response) => {
-      if (!response.ok) throw Error(response.statusText);
+      if (this.debugMode) {
+        logging.debug('State fetch response status:', response.status);
+      }
 
-      return response.json();
+      if (!response.ok) {
+        // 404 means no state exists yet - this is normal for first launch
+        if (response.status === 404) {
+          if (this.debugMode) logging.debug('No existing state found (404) - this is normal for first launch');
+          if (callback) callback(null, null);
+          return null;
+        }
+        throw Error(`${response.status} ${response.statusText}`);
+      }
+
+      // Check if response has content before trying to parse JSON
+      return response.text().then(text => {
+        if (!text || text.trim() === '') {
+          return null;
+        }
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          logging.warn('Could not parse state response as JSON, returning null');
+          return null;
+        }
+      });
     }).then((data) => {
-      if (data) logging.debug(data);
+      if (data === null) {
+        // No existing state - this is fine for first launch
+        if (callback) callback(null, null);
+        return;
+      }
+
+      if (this.debugMode) {
+        if (data) logging.debug(data);
+      }
 
       if (callback) callback(null, data);
     }).catch((error) => {
       if (error) {
         logging.error('Error fetching data:', error);
       }
-      this.showErrorNotification();
-      if (callback) callback();
+      // Don't show error notification for missing state (first launch)
+      // this.showErrorNotification();
+      if (callback) callback(null, null);
     });
   }
 
@@ -279,7 +323,10 @@ class StateModel extends Backbone.Model {
 
     this._fetchState(null, (err, data) => {
       if (err) {
-        this.showErrorNotification();
+        // Only show error if it's a real error, not just missing state
+        if (err !== 'no_state') {
+          this.showErrorNotification();
+        }
 
         if (callback) callback(err, null);
       } else {
@@ -299,7 +346,7 @@ class StateModel extends Backbone.Model {
       }, 1);
 
       queue.drain = () => {
-        logging.debug('State API queue cleared for ' + id);
+        if (this.debugMode) logging.debug('State API queue drained for ' + id);
       };
     }
 
@@ -385,9 +432,9 @@ class StateModel extends Backbone.Model {
   }
 
   onDataReady() {
-    const config = Adapt.config.get('_xapi');
-    if (config?._isRestoreEnabled === false) return;
     wait.queue(() => {
+      const config = Adapt.config.get('_xapi');
+      if (!config?._isRestoreEnabled) return;
       this.restore();
     }).bind(this);
   }

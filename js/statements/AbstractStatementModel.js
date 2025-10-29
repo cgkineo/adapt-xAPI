@@ -111,15 +111,9 @@ export default class AbstractStatementModel extends Backbone.Model {
   }
 
   getContentObjectsContextActivities(model) {
-    const contentObjects = model.getAncestorModels(true).reduce((activities, model) => {
+    const contentObjects = model.getAncestorModels(true).filter((model) => {
       const modelType = model.get('_type');
-      const isContentObject = modelType === 'menu' || modelType === 'page';
-
-      if (isContentObject) {
-        activities.push(model);
-      }
-
-      return activities;
+      return modelType === 'menu' || modelType === 'page';
     });
 
     contentObjects.reverse();
@@ -128,7 +122,7 @@ export default class AbstractStatementModel extends Backbone.Model {
 
     contentObjects.forEach((model) => {
       activities.push(this.getContentObjectContextActivity(model));
-    }, this);
+    });
 
     return activities;
   }

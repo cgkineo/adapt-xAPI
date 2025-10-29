@@ -52,18 +52,13 @@ class QuestionStatementModel extends AbstractStatementModel {
     for (const key in interactionObject) {
       const interactionActivity = interactionObject[key];
 
-      interactionActivity.forEach(function(activity) {
-        const obj = {
-          hasOwnProperty: () => false,
-          key: 'description'
-        };
-
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      interactionActivity.forEach((activity) => {
+        if (Object.prototype.hasOwnProperty.call(activity, 'description')) {
           const description = {};
           description[this.get('lang')] = activity.description;
           activity.description = description;
         }
-      }, this);
+      });
     }
 
     return interactionObject;

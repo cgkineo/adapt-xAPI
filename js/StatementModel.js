@@ -2,28 +2,18 @@ import Adapt from 'core/js/adapt';
 import data from 'core/js/data';
 import location from 'core/js/location';
 import logging from 'core/js/logging';
+import OfflineQueueModel from './OfflineQueueModel';
 import InitializedStatementModel from './statements/InitializedStatementModel';
 import TerminatedStatementModel from './statements/TerminatedStatementModel';
-import PreferredStatementModel from './statements/PreferredStatementModel';
+import PreferredLanguageStatementModel from './statements/PreferredLanguageStatementModel';
 import CompletedStatementModel from './statements/CompletedStatementModel';
 import ExperiencedStatementModel from './statements/ExperiencedStatementModel';
-import InteractedStatementModel from './statements/InteractedStatementModel';
-import ReceivedStatementModel from './statements/ReceivedStatementModel';
 import McqStatementModel from './statements/McqStatementModel';
 import SliderStatementModel from './statements/SliderStatementModel';
 import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStatementModel';
 import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
-import VideoCompletedStatementModel from './statements/VideoCompletedStatementModel';
-import VideoInteractedStatementModel from './statements/VideoInteractedStatementModel';
-import VideoPausedStatementModel from './statements/VideoPausedStatementModel';
-import VideoPlayedStatementModel from './statements/VideoPlayedStatementModel';
-import VideoSeekedStatementModel from './statements/VideoSeekedStatementModel';
-import AccessedStatementModel from './statements/AccessedStatementModel';
-import ViewedStatementModel from './statements/ViewedStatementModel';
-import FocusedStatementModel from './statements/FocusedStatementModel';
-import UnfocusedStatementModel from './statements/UnfocusedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -33,13 +23,10 @@ class StatementModel extends Backbone.Model {
         _questionInteractions: true,
         _assessmentsCompletion: false,
         _assessmentCompletion: true,
-        _focusedStates: true,
-        _navbar: true,
-        _video: true,
-        _flexibleButtons: true,
-        _visua11y: true,
-        _connectionErrors: true,
-        _inactivityTimout: true
+        _navbar: false,
+        _visua11y: false,
+        _connectionErrors: false,
+        _inactivityTimout: false
       },
       xAPIWrapper: null,
       _isInitialized: false,
@@ -56,15 +43,13 @@ class StatementModel extends Backbone.Model {
       'xapi:languageChanged': this.onLanguageChanged
     });
 
-    // Instance Variables
-    const { wrapper, _tracking } = options;
+    const { wrapper } = options;
     this.xAPIWrapper = wrapper;
-    this._sessionCounter = 0;
-    this._assessmentCounter = 0;
+    this._tracking = { ...this.defaults()._tracking, ...options._tracking };
+    this.consecutiveFailures = 0;
+    this.hasShownLRSError = false;
 
-    this._tracking = { ...this.defaults()._tracking, ..._tracking };
-
-    Object.assign(this._tracking, options._tracking);
+    this.offlineQueue = new OfflineQueueModel(options);
   }
 
   setupListeners() {
@@ -82,8 +67,6 @@ class StatementModel extends Backbone.Model {
     this.listenTo(Adapt, {
       'pageView:ready': this.onPageViewReady,
       'router:location': this.onRouterLocation,
-      'resources:itemClicked': this.onResourceClicked,
-      'glossary:termSelected': this.onGlossaryClicked,
       'tracking:complete': this.onTrackingComplete
     });
 
@@ -105,60 +88,14 @@ class StatementModel extends Backbone.Model {
         'assessment:complete': this.onAssessmentComplete
       });
     }
-
-    if (this._tracking._video) {
-      this.listenTo(Adapt, {
-        'video:play': this.onVideoPlay,
-        'video:pause': this.onVideoPause,
-        'video:seeked': this.onVideoSeeked,
-        'video:rateChange': this.onVideoRateChange,
-        'video:captionsChange': this.onVideoCaptionsChange,
-        'video:volumeChange': this.onVideoVolumeChange,
-        'video:mediaComplete': this.onVideoComplete,
-        'video:transcriptToggle': this.onVideoTranscript
-      });
-    }
-
-    if (this._tracking._focusedStates) {
-      this.listenTo(Adapt, {
-        'focusedEvents:focused': this.onFocusState,
-        'focusedEvents:unfocused': this.onUnfocusState
-      });
-    }
-
-    if (this._tracking._navbar) {
-      this.listenTo(Adapt, {
-        'help:opened': this.onHelpOpened,
-        'navigation:toggleDrawer': this.onDrawerOpened,
-        'pageLevelProgress:toggleDrawer': this.onPLPDrawerOpened
-      });
-    }
-
-    if (this._tracking._visua11y) {
-      this.listenTo(Adapt, {
-        'visua11y:opened': this.onVisua11yOpened,
-        'visua11y:toggle': this.onVisua11yToggle
-      });
-    }
-
-    if (this._tracking._flexibleButtons) {
-      this.listenTo(Adapt, {
-        'survey:opened': this.onSurveyClicked
-      });
-    }
-
-    if (this._tracking._connectionErrors) {
-      this.listenTo(Adapt, {
-        'tracking:initializeError': this.onInitializeError,
-        'tracking:dataError': this.onDataError,
-        'tracking:connectionError': this.onConnectionError,
-        'tracking:terminationError': this.onTerminationError,
-        'tracking:inactivityError': this.onInactivityError
-      });
-    }
   }
 
   setupModelListeners() {
+    // don't create new listeners for those which are still valid from initial course load
+    if (this._isInitialized) {
+      this.removeModelListeners();
+    }
+
     this.listenTo(Adapt.contentObjects, {
       'change:_isComplete': this.onContentObjectComplete
     });
@@ -178,37 +115,11 @@ class StatementModel extends Backbone.Model {
     });
   }
 
-  handleDataError() {
-    Adapt.trigger('xapi:dataError');
-  }
-
-  handleConnectionError(callback) {
-    Adapt.trigger('xapi:connectionError', callback);
-  }
-
-  handleConnectionSuccess() {
-    Adapt.trigger('xapi:connectionSuccess');
-  }
-
-  getTotalVideos() {
-    let totalVideos = Adapt.course.findDescendantModels('components', { where: { _component: 'media' } });
-    totalVideos = totalVideos.filter(element => !element.has('_isBranchClone')).length;
-
-    return totalVideos;
-  }
-
-  getCompletedVideos() {
-    const completedVideos = Adapt.course.findDescendantModels('components', { where: { _component: 'media', _isComplete: true } }).length;
-
-    return completedVideos;
-  }
-
-  sendPreferredLanguage() {
-    const { attributes } = this;
-    const statementModel = new LanguageStatementModel(attributes);
-    const statement = statementModel.getData(Adapt.course, Adapt.config.get('_activeLanguage'));
-
-    this.send(statement);
+  showErrorNotification() {
+    // This triggers the _lrs error notification
+    // Should only be called for initialization failures or complete LRS connection failures
+    // Normal send failures are handled silently by the queue
+    Adapt.trigger('xapi:lrsError');
   }
 
   sendInitialized() {
@@ -221,27 +132,33 @@ class StatementModel extends Backbone.Model {
 
   sendTerminated() {
     const model = Adapt.course;
-    const totalVideos = this.getTotalVideos();
-    const completedVideos = this.getCompletedVideos();
 
     this.setModelDuration(model);
 
-    const config = this.attributes;
-    const statementModel = new TerminatedStatementModel(config, { _sessionCounter: this._sessionCounter, _totalVideos: totalVideos, _completedVideos: completedVideos });
+    const { attributes } = this;
+    const statementModel = new TerminatedStatementModel(attributes);
     const statement = statementModel.getData(model);
+
+    this._terminate = true;
+
+    this.send(statement);
+  }
+
+  sendLanguage(lang) {
+    const { attributes } = this;
+    const statementModel = new PreferredLanguageStatementModel(attributes);
+    const statement = statementModel.getData(Adapt.course, lang);
 
     this.send(statement);
   }
 
   sendCompleted(model, type) {
     const modelType = model.get('_type');
-    const totalVideos = this.getTotalVideos();
-    const completedVideos = this.getCompletedVideos();
 
     if (modelType === 'course' || modelType === 'page') this.setModelDuration(model);
 
     const { attributes } = this;
-    const statementModel = new CompletedStatementModel(attributes, { _type: type, _sessionCounter: this._sessionCounter, _totalVideos: totalVideos, _completedVideos: completedVideos });
+    const statementModel = new CompletedStatementModel(attributes, { _type: type });
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -255,56 +172,39 @@ class StatementModel extends Backbone.Model {
     const statement = statementModel.getData(model);
 
     this.send(statement);
-
-    model.unset('_sessionStartTime', { silent: true });
-    model.unset('_sessionDuration', { silent: true });
   }
 
-  sendInteracted(type) {
-    const model = Adapt.course;
-
-    const config = this.attributes;
-    const statementModel = new InteractedStatementModel(config, { _type: type });
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendReceived(type) {
-    const model = Adapt.course;
-
-    const config = this.attributes;
-    const statementModel = new ReceivedStatementModel(config, { _type: type });
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendQuestionAnswered(model) {
+  sendQuestion(model) {
     const { attributes } = this;
     const questionType = model.get('_component');
-    let StatementClass;
 
-    // better solution than this factory type pattern?
+    let statementClass;
+
     switch (questionType) {
       case 'mcq':
+        statementClass = McqStatementModel;
+        break;
       case 'gmcq':
-        StatementClass = McqStatementModel;
+        statementClass = McqStatementModel;
         break;
       case 'slider':
-        StatementClass = SliderStatementModel;
+        statementClass = SliderStatementModel;
         break;
-      case 'confidenceSlider':
-        StatementClass = ConfidenceSliderStatementModel;
+      case 'confidenceslider':
+        statementClass = ConfidenceSliderStatementModel;
         break;
       case 'textinput':
-        StatementClass = TextInputStatementModel;
+        statementClass = TextInputStatementModel;
         break;
       case 'matching':
-        StatementClass = MatchingStatementModel;
+        statementClass = MatchingStatementModel;
         break;
+      default:
+        logging.warn(`xAPI: No statement model found for question type '${questionType}'`);
+        return;
     }
 
+    const StatementClass = statementClass;
     const statementModel = new StatementClass(attributes);
     const statement = statementModel.getData(model);
 
@@ -312,143 +212,112 @@ class StatementModel extends Backbone.Model {
   }
 
   sendAssessmentCompleted(model, state) {
-    this._assessmentCounter++;
-    const assessmentCounter = this._assessmentCounter;
-
     const { attributes } = this;
-    const statementModel = new AssessmentStatementModel(attributes, { _assessmentCounter: assessmentCounter });
+    const statementModel = new AssessmentStatementModel(attributes);
     const statement = statementModel.getData(model, state);
-
-    this.send(statement);
-  }
-
-  sendResourceAccessed(model) {
-    const config = this.attributes;
-    const statementModel = new AccessedStatementModel(config);
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendGlossaryViewed(model) {
-    const config = this.attributes;
-    const statementModel = new ViewedStatementModel(config);
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendPreferred(name, state) {
-    const model = Adapt.course;
-
-    const config = this.attributes;
-    const statementModel = new PreferredStatementModel(config, { _name: name, _state: state });
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendVideoPlayed(model, data) {
-    const config = this.attributes;
-    const statementModel = new VideoPlayedStatementModel(config);
-    const statement = statementModel.getData(model, data);
-
-    this.send(statement);
-  }
-
-  sendVideoPaused(model, data) {
-    const config = this.attributes;
-    const statementModel = new VideoPausedStatementModel(config);
-    const statement = statementModel.getData(model, data);
-
-    this.send(statement);
-  }
-
-  sendVideoSeeked(model, data) {
-    const config = this.attributes;
-    const statementModel = new VideoSeekedStatementModel(config);
-    const statement = statementModel.getData(model, data);
-
-    this.send(statement);
-  }
-
-  sendVideoInteracted(model, data, type) {
-    const config = this.attributes;
-    const statementModel = new VideoInteractedStatementModel(config, { _type: type });
-    const statement = statementModel.getData(model, data);
-
-    this.send(statement);
-  }
-
-  sendVideoCompleted(model, data, type) {
-    const totalVideos = this.getTotalVideos();
-    const completedVideos = this.getCompletedVideos();
-
-    const config = this.attributes;
-    const statementModel = new VideoCompletedStatementModel(config, { _type: type, _sessionCounter: this._sessionCounter, _totalVideos: totalVideos, _completedVideos: completedVideos });
-    const statement = statementModel.getData(model, data);
-
-    this.send(statement);
-  }
-
-  sendFocusState(model) {
-    const config = this.attributes;
-    const statementModel = new FocusedStatementModel(config);
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendUnfocusState(model) {
-    const config = this.attributes;
-    const statementModel = new UnfocusedStatementModel(config);
-    const statement = statementModel.getData(model);
 
     this.send(statement);
   }
 
   /*
    * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
+   *
+   * Error Handling Strategy:
+   * - Statements are always attempted to be sent directly first
+   * - Retry logic with configurable attempts and delays
+   * - If queue is enabled: failed statements are queued silently (no error popup)
+   * - If queue is disabled: shows _lrs error after 3 consecutive network failures
+   * - Queue system shows _lrs error after 3 consecutive complete flush failures
+   * - Opportunistically flushes queue after successful sends
+   * - Network failures include: timeout, "Failed to fetch", NetworkError, AbortError
    */
-  send(statement) {
-    const config = Adapt.config.get('_xapi');
+  async send(statement) {
+    const xapiConfig = Adapt.config.get('_xapi');
+    const queueConfig = xapiConfig._offlineQueue;
 
-    if (config?._isDebugModeEnabled) {
-      logging.debug(statement);
-      return;
+    // Check and flush any queued statements first
+    if (queueConfig?._isEnabled) {
+      await this.offlineQueue.checkQueue();
     }
 
     const { lrs, xapiVersion } = this.xAPIWrapper;
     const url = `${lrs.endpoint}statements`;
     const data = JSON.stringify(statement);
-    const scope = this;
 
-    fetch(url, {
-      keepalive: this._terminate,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: lrs.auth,
-        'X-Experience-API-Version': xapiVersion
-      },
-      body: data
-    }).then((response) => {
-      logging.debug(`[${statement.id}]: ${response.status} - ${response.statusText}`);
+    const maxRetries = queueConfig?._maxRetries || 1;
+    let attempt = 0;
 
-      if (!response.ok) throw Error(response.statusText);
+    while (attempt < maxRetries) {
+      try {
+        const controller = new AbortController();
+        const timeout = queueConfig?._timeout || 5000;
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-      scope._sessionCounter++;
-      return response;
-    }).catch(error => {
-      switch (error) {
-        case 404:
-          scope.handleConnectionError(scope.send.bind(scope, statement));
+        const response = await fetch(url, {
+          keepalive: this._terminate,
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: lrs.auth,
+            'X-Experience-API-Version': xapiVersion
+          },
+          body: data
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          logging.debug(`[${statement.id}]: ${response.status} - ${response.statusText}`);
+          throw new Error(response.statusText);
+        }
+
+        logging.debug(`[${statement.id}]: ${response.status} - ${response.statusText}`);
+
+        // Reset failure counter on successful send
+        this.consecutiveFailures = 0;
+        this.hasShownLRSError = false;
+
+        // Opportunistic queue flush: if queue exists, try to flush it after successful send
+        if (queueConfig?._isEnabled && this.offlineQueue.queue.length > 0) {
+          setTimeout(() => {
+            this.offlineQueue.flushQueue();
+          }, 0);
+        }
+
+        return response;
+      } catch (error) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          // Track consecutive failures
+          const isNetworkError = !error.message || error.message.includes('NetworkError') || error.message.includes('Failed to fetch') || error.name === 'AbortError';
+
+          if (isNetworkError) {
+            this.consecutiveFailures++;
+          }
+
+          // Queue the statement if all retries failed (no notification - queue handles it)
+          if (queueConfig?._isEnabled) {
+            logging.debug(`[${statement.id}]: Queued after ${attempt} attempts`);
+            this.offlineQueue.queueStatement(statement);
+          } else {
+            // Show error if queue is disabled and this is a critical failure (no response at all)
+            logging.error(`[${statement.id}]: Failed to send statement - ${error.message}`);
+
+            // Show LRS error notification after 3 consecutive network failures
+            if (isNetworkError && this.consecutiveFailures >= 3 && !this.hasShownLRSError) {
+              this.hasShownLRSError = true;
+              this.showErrorNotification();
+            }
+          }
           break;
-        default:
-          scope.handleDataError();
-          break;
+        }
+
+        // Wait before retrying
+        const retryDelay = queueConfig?._retryDelay || 2000;
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
-    });
+    }
   }
 
   setModelSessionStartTime(model, restoredTime) {
@@ -461,282 +330,173 @@ class StatementModel extends Backbone.Model {
   }
 
   setModelDuration(model) {
-    const sessionTime = model.get('_sessionStartTime');
-    const elapsedTime = sessionTime ? new Date().getTime() - sessionTime : 0;
+    const startTime = model.get('_sessionStartTime');
+    const duration = this.getISODuration(startTime);
 
-    // reset `_sessionStartTime` to prevent cumulative additions via multiple calls to this method within the same session - mostly affects course model
-    this.setModelSessionStartTime(model);
-
-    model.set({
-      _sessionDuration: (model.get('_sessionDuration') || 0) + elapsedTime,
-      _totalDuration: (model.get('_totalDuration') || 0) + elapsedTime
-    });
+    model.set('_sessionDuration', duration);
   }
 
   onLanguageChanged(lang, isStateReset) {
     this._hasLanguageChanged = true;
 
-    if (this._isInitialized) {
-      this.removeModelListeners();
+    this.sendLanguage(lang);
 
-      if (this._currentPageModel) {
-        // @todo: ideally this would fire before the Adapt collections have reset - not possible in earlier frameworks but might be possible in later by `listenTo('Adapt.data', 'loading')` which fires before reset
-        // send experienced statement to ensure statement is sent before preferred language
-        this.sendExperienced(this._currentPageModel);
-
-        // due to models reloading `_currentPageModel` is not part of Adapt.contentObjects so the stateModel is not picking up the durations change
-        Adapt.trigger('xapi:durationsChange', this._currentPageModel);
-
-        // reset to bypass call in `onRouterLocation` so experienced statement is not sent
-        this._currentPageModel = null;
-      }
-
-      // restore course session start time
-      if (!isStateReset) this.setModelSessionStartTime(Adapt.course, this._courseSessionStartTime);
-
-      // send statement if language has changed since the course was started - call in `onAdaptInitialize` is only used initially to ensure correct execution order of statements
-      this.sendPreferredLanguage();
+    if (isStateReset) {
+      this.resetModels();
     }
-
-    this.set('lang', lang);
-
-    // reset course session start time if the state has been reset
-    if (isStateReset) this.setModelSessionStartTime(Adapt.course);
   }
 
   onAdaptInitialize() {
-    if (!this._isInitialized) {
-      this.setModelSessionStartTime(Adapt.course);
-
-      this.sendInitialized();
-
-      // only called on initial launch if the course contains a language picker - call in `onLanguageChanged` is used for subsequent changes within the current browser session
-      if (this._hasLanguageChanged) {
-        this.sendPreferredLanguage();
-
-        this._hasLanguageChanged = false;
-      }
-    }
-
     this.setupListeners();
 
+    // restore _sessionStartTime for course, pages and components
+    data.forEach((model) => {
+      const restoredTime = model.get('_sessionStartTime');
+
+      if (!restoredTime) {
+        // @todo: issue where sessionStartTime was being restored for current page after course initialization has finished (affecting duration result). Should _sessionStartTime be deleted when not on current page?
+        this.setModelSessionStartTime(model);
+        return;
+      }
+
+      this.setModelSessionStartTime(model, restoredTime);
+    });
+
     this._isInitialized = true;
-  }
 
-  onPageViewReady(view) {
-    const { model } = view;
-
-    // store model so we have a reference to existing model following a language change
-    this._currentPageModel = model;
-
-    this.setModelSessionStartTime(model);
-  }
-
-  onRouterLocation() {
-    const { _previousId: previousId } = location;
-
-    // bypass if no page model or no previous location
-    if (!this._currentPageModel || !previousId) return;
-
-    const model = data.findById(previousId);
-
-    if (model?.get('_type') === 'page') {
-      // only record experienced statements for pages
-      this.sendExperienced(model);
-    }
-
-    this._currentPageModel = null;
-  }
-
-  onContentObjectComplete(model) {
-    // since Adapt 5.5 the course model is treated as a contentObject - ignore as this is already handled by `onTrackingComplete`
-    if (model.get('_type') === 'course') return;
-
-    // @todo: if page contains an assessment which can be reset but the page completes regardless of pass/fail, the `_totalDuration` will increase cumulatively for each attempt - should we reset the duration when reset?
-    if (model.get('_isComplete') && !model.get('_isOptional')) {
-      this.sendCompleted(model);
-    }
-  }
-
-  onComponentComplete(model) {
-    if (model.get('_isComplete') && model.get('_recordCompletion')) {
-      this.sendCompleted(model);
-    }
-  }
-
-  onAssessmentComplete(state) {
-    // create model based on Adapt.course._assessment, otherwise use Adapt.course as base
-    const assessmentConfig = Adapt.course.get('_assessment');
-    const model = (assessmentConfig?._id && assessmentConfig?.title)
-      ? new Backbone.Model(assessmentConfig)
-      : Adapt.course;
-
-    setTimeout(this.sendAssessmentCompleted.bind(this, model, state), 0);
-  }
-
-  onAssessmentsComplete(state, model) {
-    // defer as triggered before last question triggers questionView:recordInteraction
-    setTimeout(this.sendAssessmentCompleted.bind(this, model, state), 0);
-  }
-
-  onTrackingComplete() {
-    this.sendCompleted(Adapt.course);
-
-    // no need to use completionData.assessment due to assessment:complete listener, which isn't restricted to only firing on tracking:complete
-  }
-
-  onQuestionInteraction(view) {
-    this.sendQuestionAnswered(view.model);
-  }
-
-  onResourceClicked(data, location) {
-    const model = new Backbone.Model();
-    model.set({
-      type: data._type,
-      title: data.title,
-      description: data.description,
-      url: data.filename ? data.filename : data._link,
-      location
-    });
-
-    this.sendResourceAccessed(model);
-  }
-
-  onGlossaryClicked(data) {
-    const model = new Backbone.Model();
-
-    model.set({
-      term: data.attributes.term,
-      description: data.attributes.description
-    });
-
-    this.sendGlossaryViewed(model);
-  }
-
-  onVideoPlay(model, data) {
-    this.sendVideoPlayed(model, data);
-  }
-
-  onVideoPause(model, data) {
-    this.sendVideoPaused(model, data);
-  }
-
-  onVideoSeeked(model, data) {
-    this.sendVideoSeeked(model, data);
-  }
-
-  onVideoRateChange(model, data) {
-    this.sendVideoInteracted(model, data, 'rate');
-  }
-
-  onVideoCaptionsChange(model, data) {
-    this.sendVideoInteracted(model, data, 'captions');
-  }
-
-  onVideoVolumeChange(model, data) {
-    this.sendVideoInteracted(model, data, 'volume');
-  }
-
-  onVideoTranscript(model, data) {
-    if (data.state === 'complete') {
-      this.sendVideoCompleted(model, data, 'transcript');
-    } else {
-      this.sendVideoInteracted(model, data, 'transcript');
-    }
-  }
-
-  onVideoComplete(model, data) {
-    this.sendVideoCompleted(model, data, 'watch');
-  }
-
-  onHelpOpened() {
-    this.sendInteracted('help');
-  }
-
-  onDrawerOpened() {
-    this.sendInteracted('drawer');
-  }
-
-  onPLPDrawerOpened() {
-    this.sendInteracted('pageLevelProgress');
-  }
-
-  onVisua11yOpened() {
-    this.sendInteracted('accessibility');
-  }
-
-  onVisua11yToggle(model, name, state) {
-    this.sendPreferred(model, name, state);
-  }
-
-  onInitializeError() {
-    this.sendReceived('Initialization Error');
-  }
-
-  onDataError() {
-    this.sendReceived('Data Error');
-  }
-
-  onConnectionError() {
-    this.sendReceived('Connection Error');
-  }
-
-  onTerminationError() {
-    this.sendReceived('Termination Error');
-  }
-
-  onInactivityError() {
-    this.sendReceived('Inactivity Popup');
-  }
-
-  onFocusState() {
-    const model = Adapt.findById(Adapt.location._currentId);
-
-    if (model && model.get('_type') === 'course') {
-      this.sendFocusState(Adapt.course);
-    }
-
-    if (model && model.get('_type') === 'page') {
-      this.sendFocusState(this._currentPageModel);
-    }
-  }
-
-  onUnfocusState() {
-    const model = Adapt.findById(Adapt.location._currentId);
-
-    if (model && model.get('_type') === 'course') {
-      this.sendUnfocusState(Adapt.course);
-    }
-
-    if (model && model.get('_type') === 'page') {
-      this.sendUnfocusState(this._currentPageModel);
-    }
+    this.sendInitialized();
   }
 
   onVisibilityChange() {
-    // set durations to ensure State loss is minimised for durations data, if terminate didn't fire
-    if (document.visibilityState === 'hidden' && !this._terminate) {
-      if (this._currentPageModel) this.setModelDuration(this._currentPageModel);
+    const isHidden = document.hidden;
 
-      this.setModelDuration(Adapt.course);
+    if (isHidden) return;
+
+    const currentModel = location._currentModel;
+
+    // @todo: capture start time for course session across language changes? Maybe not... if the language changes, they are essentially restarting their session
+    if (this._hasLanguageChanged) {
+      this._hasLanguageChanged = false;
+
+      data.forEach((model) => {
+        this.setModelSessionStartTime(model);
+      });
     }
+
+    if (!currentModel || !this._isInitialized) return;
+
+    const currentPageModel = currentModel.getAncestorModels().find(ancestor => ancestor.get('_type') === 'page');
+
+    // @todo: should we reset the _sessionStartTime when navigating forward through pages, or only when changing tabs? Not sure there is any benefit in doing the former...
+    if (this._currentPageModel !== currentPageModel) {
+      this._currentPageModel = currentPageModel;
+      return;
+    }
+
+    this.setModelSessionStartTime(currentPageModel);
+  }
+
+  onPageViewReady(pageModel) {
+    this._currentPageModel = pageModel;
+
+    this.setModelSessionStartTime(pageModel);
+  }
+
+  onRouterLocation() {
+    const currentLocation = location._currentLocation;
+
+    if (currentLocation._contentType !== 'page' || !this._currentPageModel) return;
+
+    this.sendExperienced(this._currentPageModel);
   }
 
   onWindowUnload() {
-    $(window).off('beforeunload unload', this._onWindowUnload);
-
-    if (!this._terminate) {
-      Adapt.terminate = this._terminate = true;
-
-      const model = data.findById(location._currentId);
-
-      if (model?.get('_type') !== 'course') {
-        this.sendExperienced(model);
-      }
-
-      this.sendTerminated();
-    }
+    this.sendTerminated();
   }
+
+  onContentObjectComplete(model) {
+    const completedType = model.get('_type') === 'course' ? 'course' : 'section';
+
+    this.sendCompleted(model, completedType);
+  }
+
+  onComponentComplete(model) {
+    const shouldRecordInteraction = model.get('_recordCompletion');
+
+    if (!shouldRecordInteraction) return;
+
+    const isQuestion = model.get('_isQuestionType');
+
+    if (!isQuestion) {
+      this.sendCompleted(model, 'activity');
+      return;
+    }
+
+    this.sendQuestion(model);
+  }
+
+  onQuestionInteraction(questionView) {
+    const model = questionView.model;
+
+    this.sendQuestion(model);
+  }
+
+  onAssessmentsComplete(state) {
+    const assessmentModel = state.assessments.at(state.assessmentId);
+    const article = assessmentModel.getChildren().models[0];
+
+    this.sendAssessmentCompleted(article, state);
+  }
+
+  onAssessmentComplete(state) {
+    const model = Adapt.course;
+
+    this.sendAssessmentCompleted(model, state);
+  }
+
+  onTrackingComplete() {
+    const model = Adapt.course;
+
+    this.sendCompleted(model, 'course');
+  }
+
+  resetModels() {
+    data.forEach((model) => {
+      this.setModelSessionStartTime(model);
+    });
+  }
+
+  getISODuration(timestamp) {
+    const start = new Date(timestamp);
+    const finish = new Date();
+
+    const duration = (finish.getTime() - start.getTime()) / 1000;
+
+    return this.convertToISODuration(duration);
+  }
+
+  convertToISODuration(duration) {
+    // @todo: calculate years and months - moment.js doesn't appear to handle this correctly so I'm not sure it's just a case of dividing. Also, when do we reset the timer? Surely years and months will very rarely be required?
+    const days = Math.floor(duration / 86400);
+    const hours = Math.floor((duration % 86400) / 3600);
+    const minutes = Math.floor(((duration % 86400) % 3600) / 60);
+    const seconds = Math.floor(((duration % 86400) % 3600) % 60);
+
+    let isoDuration = 'P';
+
+    if (days) isoDuration = `${isoDuration}${days}D`;
+
+    isoDuration = `${isoDuration}T`;
+
+    if (hours) isoDuration = `${isoDuration}${hours}H`;
+    if (minutes) isoDuration = `${isoDuration}${minutes}M`;
+    if (seconds) isoDuration = `${isoDuration}${seconds}S`;
+
+    if (isoDuration === 'PT') isoDuration = 'PT0S';
+
+    return isoDuration;
+  }
+
 }
 
 export default StatementModel;

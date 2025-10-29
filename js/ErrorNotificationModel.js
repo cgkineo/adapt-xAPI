@@ -62,7 +62,7 @@ class ErrorNotificationModel extends Backbone.Model {
 
     let isCancellable = true;
 
-    if (config.hasOwnProperty('_isCancellable')) {
+    if (Object.prototype.hasOwnProperty.call(config, '_isCancellable')) {
       isCancellable = config._isCancellable;
       notifyConfig._isCancellable = isCancellable;
       notifyConfig._closeOnShadowClick = !isCancellable;

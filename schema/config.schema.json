@@ -59,6 +59,80 @@
                   "title": "Record assessment completion",
                   "description": "If enabled, the course will send a statement when the assessment have been completed. If using multiple assessments, the statement will be sent when all assessments have been completed.",
                   "default": true
+                },
+                "_navbar": {
+                  "type": "boolean",
+                  "title": "Record navigation actions",
+                  "description": "If enabled, the course will send statements when navigation buttons are clicked.",
+                  "default": false
+                },
+                "_visua11y": {
+                  "type": "boolean",
+                  "title": "Record accessibility interactions",
+                  "description": "If enabled, the course will send statements for Visua11y accessibility interactions.",
+                  "default": false
+                },
+                "_connectionErrors": {
+                  "type": "boolean",
+                  "title": "Record connection errors",
+                  "description": "If enabled, the course will send statements when LRS connection errors occur.",
+                  "default": false
+                },
+                "_inactivityTimout": {
+                  "type": "boolean",
+                  "title": "Record inactivity timeout",
+                  "description": "If enabled, the course will send statements when user inactivity timeout is detected.",
+                  "default": false
+                }
+              }
+            },
+            "_isRestoreEnabled": {
+              "type": "boolean",
+              "title": "Enable state restoration",
+              "description": "If enabled, the course will attempt to restore learner progress from the LRS using the State API.",
+              "default": true
+            },
+            "_isDebugModeEnabled": {
+              "type": "boolean",
+              "title": "Enable debug mode",
+              "description": "If enabled, the course will log detailed xAPI debug information to the console.",
+              "default": false
+            },
+            "_offlineQueue": {
+              "type": "object",
+              "title": "Offline Queue",
+              "description": "Configure offline queueing for unreliable network connections.",
+              "default": {},
+              "properties": {
+                "_isEnabled": {
+                  "type": "boolean",
+                  "title": "Enable offline queue",
+                  "description": "If enabled, statements will be queued and retried when network connectivity is unreliable.",
+                  "default": false
+                },
+                "_threshold": {
+                  "type": "number",
+                  "title": "Queue threshold",
+                  "description": "Maximum number of statements to queue before triggering batch flush.",
+                  "default": 10
+                },
+                "_timeout": {
+                  "type": "number",
+                  "title": "Request timeout (ms)",
+                  "description": "How long to wait for LRS response before timing out.",
+                  "default": 5000
+                },
+                "_maxRetries": {
+                  "type": "number",
+                  "title": "Maximum retries",
+                  "description": "How many times to retry failed statements before giving up.",
+                  "default": 3
+                },
+                "_retryDelay": {
+                  "type": "number",
+                  "title": "Retry delay (ms)",
+                  "description": "How long to wait before retrying failed statements.",
+                  "default": 2000
                 }
               }
             },

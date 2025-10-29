@@ -90,8 +90,7 @@ class QuestionStatementModel extends AbstractStatementModel {
     const extensions = super.getObjectExtensions.apply(this, arguments);
 
     Object.assign(extensions, {
-      'http://id.tincanapi.com/extension/attempt-id': this.getAttempt(model),
-      'http://id.tincanapi.com/extension/tags': model.get('_webtags')
+      'http://id.tincanapi.com/extension/attempt-id': this.getAttempt(model)
     });
 
     return extensions;

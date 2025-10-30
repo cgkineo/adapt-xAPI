@@ -66,6 +66,12 @@
                   "description": "If enabled, the course will send a statement when the assessment have been completed. If using multiple assessments, the statement will be sent when all assessments have been completed.",
                   "default": true
                 },
+                "_video": {
+                  "type": "boolean",
+                  "title": "Record video interactions",
+                  "description": "If enabled, the course will send statements for video interactions (play, pause, seeked, rate change, captions, volume, complete, transcript).",
+                  "default": false
+                },
                 "_navbar": {
                   "type": "boolean",
                   "title": "Record navigation actions",

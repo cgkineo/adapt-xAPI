@@ -14,6 +14,11 @@ import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStateme
 import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
+import VideoPlayedStatementModel from './statements/VideoPlayedStatementModel';
+import VideoPausedStatementModel from './statements/VideoPausedStatementModel';
+import VideoSeekedStatementModel from './statements/VideoSeekedStatementModel';
+import VideoInteractedStatementModel from './statements/VideoInteractedStatementModel';
+import VideoCompletedStatementModel from './statements/VideoCompletedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -23,6 +28,7 @@ class StatementModel extends Backbone.Model {
         _questionInteractions: true,
         _assessmentsCompletion: false,
         _assessmentCompletion: true,
+        _video: false,
         _navbar: false,
         _visua11y: false,
         _connectionErrors: false,
@@ -86,6 +92,19 @@ class StatementModel extends Backbone.Model {
     if (this._tracking._assessmentCompletion) {
       this.listenTo(Adapt, {
         'assessment:complete': this.onAssessmentComplete
+      });
+    }
+
+    if (this._tracking._video) {
+      this.listenTo(Adapt, {
+        'video:play': this.onVideoPlay,
+        'video:pause': this.onVideoPause,
+        'video:seeked': this.onVideoSeeked,
+        'video:rateChange': this.onVideoRateChange,
+        'video:captionsChange': this.onVideoCaptionsChange,
+        'video:volumeChange': this.onVideoVolumeChange,
+        'video:mediaComplete': this.onVideoComplete,
+        'video:transcriptToggle': this.onVideoTranscript
       });
     }
   }
@@ -215,6 +234,62 @@ class StatementModel extends Backbone.Model {
     const { attributes } = this;
     const statementModel = new AssessmentStatementModel(attributes);
     const statement = statementModel.getData(model, state);
+
+    this.send(statement);
+  }
+
+  getTotalVideos() {
+    let totalVideos = Adapt.course.findDescendantModels('components', { where: { _component: 'media' } });
+    totalVideos = totalVideos.filter(element => !element.has('_isBranchClone')).length;
+
+    return totalVideos;
+  }
+
+  getCompletedVideos() {
+    const completedVideos = Adapt.course.findDescendantModels('components', { where: { _component: 'media', _isComplete: true } }).length;
+
+    return completedVideos;
+  }
+
+  sendVideoPlayed(model, data) {
+    const config = this.attributes;
+    const statementModel = new VideoPlayedStatementModel(config);
+    const statement = statementModel.getData(model, data);
+
+    this.send(statement);
+  }
+
+  sendVideoPaused(model, data) {
+    const config = this.attributes;
+    const statementModel = new VideoPausedStatementModel(config);
+    const statement = statementModel.getData(model, data);
+
+    this.send(statement);
+  }
+
+  sendVideoSeeked(model, data) {
+    const config = this.attributes;
+    const statementModel = new VideoSeekedStatementModel(config);
+    const statement = statementModel.getData(model, data);
+
+    this.send(statement);
+  }
+
+  sendVideoInteracted(model, data, type) {
+    const config = this.attributes;
+    const statementModel = new VideoInteractedStatementModel(config, { _type: type });
+    const statement = statementModel.getData(model, data);
+
+    this.send(statement);
+  }
+
+  sendVideoCompleted(model, data, type) {
+    const totalVideos = this.getTotalVideos();
+    const completedVideos = this.getCompletedVideos();
+
+    const config = this.attributes;
+    const statementModel = new VideoCompletedStatementModel(config, { _type: type, _totalVideos: totalVideos, _completedVideos: completedVideos });
+    const statement = statementModel.getData(model, data);
 
     this.send(statement);
   }
@@ -458,6 +533,42 @@ class StatementModel extends Backbone.Model {
     const model = Adapt.course;
 
     this.sendCompleted(model, 'course');
+  }
+
+  onVideoPlay(model, data) {
+    this.sendVideoPlayed(model, data);
+  }
+
+  onVideoPause(model, data) {
+    this.sendVideoPaused(model, data);
+  }
+
+  onVideoSeeked(model, data) {
+    this.sendVideoSeeked(model, data);
+  }
+
+  onVideoRateChange(model, data) {
+    this.sendVideoInteracted(model, data, 'rate');
+  }
+
+  onVideoCaptionsChange(model, data) {
+    this.sendVideoInteracted(model, data, 'captions');
+  }
+
+  onVideoVolumeChange(model, data) {
+    this.sendVideoInteracted(model, data, 'volume');
+  }
+
+  onVideoTranscript(model, data) {
+    if (data.state === 'complete') {
+      this.sendVideoCompleted(model, data, 'transcript');
+    } else {
+      this.sendVideoInteracted(model, data, 'transcript');
+    }
+  }
+
+  onVideoComplete(model, data) {
+    this.sendVideoCompleted(model, data, 'watch');
   }
 
   resetModels() {

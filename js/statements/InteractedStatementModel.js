@@ -33,7 +33,7 @@ class InteractedStatementModel extends AbstractStatementModel {
   getContextExtensions(model) {
     const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
 
-    _.extend(extensions, {
+    Object.assign(extensions, {
       'http://id.tincanapi.com/extension/condition-type': this._type
     });
 

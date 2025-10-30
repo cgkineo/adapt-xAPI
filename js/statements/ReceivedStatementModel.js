@@ -40,11 +40,9 @@ class ReceivedStatementModel extends AbstractStatementModel {
   getContextExtensions(model) {
     const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
 
-    _.extend(extensions, {
+    return Object.assign(extensions, {
       'http://id.tincanapi.com/extension/condition-type': this._type
     });
-
-    return extensions;
   }
 }
 

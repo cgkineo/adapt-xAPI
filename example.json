@@ -15,6 +15,7 @@
             "_assessmentCompletion": true,
             "_navbar": false,
             "_visua11y": false,
+            "_glossary": false,
             "_connectionErrors": false,
             "_inactivityTimout": false
         },

@@ -34,14 +34,12 @@ class ViewedStatementModel extends AbstractStatementModel {
   getContextExtensions(model) {
     const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
 
-    _.extend(extensions, {
+    return Object.assign(extensions, {
       'http://id.tincanapi.com/extension/tags': {
         term: model.get('term'),
         description: model.get('description')
       }
     });
-
-    return extensions;
   }
 
   getUniqueIri(model) {

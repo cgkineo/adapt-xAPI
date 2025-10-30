@@ -15,8 +15,12 @@ import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
 import QuickQuestionsStatementModel from './statements/QuickQuestionsStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
+import InteractedStatementModel from './statements/InteractedStatementModel';
+import PreferredStatementModel from './statements/PreferredStatementModel';
 import CreatedStatementModel from './statements/CreatedStatementModel';
 import ReleasedStatementModel from './statements/ReleasedStatementModel';
+import ReceivedStatementModel from './statements/ReceivedStatementModel';
+import ViewedStatementModel from './statements/ViewedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -29,6 +33,7 @@ class StatementModel extends Backbone.Model {
         _assessmentCompletion: true,
         _navbar: false,
         _visua11y: false,
+        _glossary: false,
         _connectionErrors: false,
         _inactivityTimout: false
       },
@@ -90,6 +95,37 @@ class StatementModel extends Backbone.Model {
     if (this._tracking._assessmentCompletion) {
       this.listenTo(Adapt, {
         'assessment:complete': this.onAssessmentComplete
+      });
+    }
+
+    if (this._tracking._visua11y) {
+      this.listenTo(Adapt, {
+        'visua11y:opened': this.onVisua11yOpened,
+        'visua11y:toggle': this.onVisua11yToggle
+      });
+    }
+
+    if (this._tracking._navbar) {
+      this.listenTo(Adapt, {
+        'help:opened': this.onHelpOpened,
+        'navigation:toggleDrawer': this.onDrawerOpened,
+        'pageLevelProgress:toggleDrawer': this.onPLPDrawerOpened
+      });
+    }
+
+    if (this._tracking._connectionErrors) {
+      this.listenTo(Adapt, {
+        'tracking:initializeError': this.onInitializeError,
+        'tracking:dataError': this.onDataError,
+        'tracking:connectionError': this.onConnectionError,
+        'tracking:terminationError': this.onTerminationError,
+        'tracking:inactivityError': this.onInactivityError
+      });
+    }
+
+    if (this._tracking._glossary) {
+      this.listenTo(Adapt, {
+        'glossary:termSelected': this.onGlossaryTermSelected
       });
     }
 
@@ -247,6 +283,44 @@ class StatementModel extends Backbone.Model {
     const { attributes } = this;
     const statementModel = new ReleasedStatementModel(attributes, { _name: name, _length: length, _reason: reason });
     const statement = statementModel.getData(Adapt.course);
+
+    this.send(statement);
+  }
+
+  sendInteracted(type) {
+    const model = Adapt.course;
+
+    const { attributes } = this;
+    const statementModel = new InteractedStatementModel(attributes, { _type: type });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendPreferred(name, state) {
+    const model = Adapt.course;
+
+    const { attributes } = this;
+    const statementModel = new PreferredStatementModel(attributes, { _name: name, _state: state });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendReceived(type) {
+    const model = Adapt.course;
+
+    const { attributes } = this;
+    const statementModel = new ReceivedStatementModel(attributes, { _type: type });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendViewed(model) {
+    const { attributes } = this;
+    const statementModel = new ViewedStatementModel(attributes);
+    const statement = statementModel.getData(model);
 
     this.send(statement);
   }
@@ -504,6 +578,50 @@ class StatementModel extends Backbone.Model {
 
   onQueueRelease(queueLength, reason) {
     this.sendReleased('Statement Queue', queueLength, reason);
+  }
+
+  onVisua11yOpened() {
+    this.sendInteracted('accessibility');
+  }
+
+  onVisua11yToggle(model, name, state) {
+    this.sendPreferred(name, state);
+  }
+
+  onHelpOpened() {
+    this.sendInteracted('help');
+  }
+
+  onDrawerOpened() {
+    this.sendInteracted('drawer');
+  }
+
+  onPLPDrawerOpened() {
+    this.sendInteracted('pageLevelProgress');
+  }
+
+  onInitializeError() {
+    this.sendReceived('Initialization Error');
+  }
+
+  onDataError() {
+    this.sendReceived('Data Error');
+  }
+
+  onConnectionError() {
+    this.sendReceived('Connection Error');
+  }
+
+  onTerminationError() {
+    this.sendReceived('Termination Error');
+  }
+
+  onInactivityError() {
+    this.sendReceived('Inactivity Popup');
+  }
+
+  onGlossaryTermSelected(model) {
+    this.sendViewed(model);
   }
 
   resetModels() {

@@ -14,6 +14,8 @@ import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStateme
 import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
+import CreatedStatementModel from './statements/CreatedStatementModel';
+import ReleasedStatementModel from './statements/ReleasedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -86,6 +88,15 @@ class StatementModel extends Backbone.Model {
     if (this._tracking._assessmentCompletion) {
       this.listenTo(Adapt, {
         'assessment:complete': this.onAssessmentComplete
+      });
+    }
+
+    // Listen for queue events if offline queue is enabled
+    const xapiConfig = Adapt.config.get('_xapi');
+    if (xapiConfig._offlineQueue?._isEnabled) {
+      this.listenTo(Adapt, {
+        'queue:create': this.onQueueCreate,
+        'queue:release': this.onQueueRelease
       });
     }
   }
@@ -215,6 +226,22 @@ class StatementModel extends Backbone.Model {
     const { attributes } = this;
     const statementModel = new AssessmentStatementModel(attributes);
     const statement = statementModel.getData(model, state);
+
+    this.send(statement);
+  }
+
+  sendCreated(name) {
+    const { attributes } = this;
+    const statementModel = new CreatedStatementModel(attributes, { _name: name });
+    const statement = statementModel.getData(Adapt.course);
+
+    this.send(statement);
+  }
+
+  sendReleased(name, length, reason) {
+    const { attributes } = this;
+    const statementModel = new ReleasedStatementModel(attributes, { _name: name, _length: length, _reason: reason });
+    const statement = statementModel.getData(Adapt.course);
 
     this.send(statement);
   }
@@ -464,6 +491,14 @@ class StatementModel extends Backbone.Model {
     const model = Adapt.course;
 
     this.sendCompleted(model, 'course');
+  }
+
+  onQueueCreate() {
+    this.sendCreated('Statement Queue');
+  }
+
+  onQueueRelease(queueLength, reason) {
+    this.sendReleased('Statement Queue', queueLength, reason);
   }
 
   resetModels() {

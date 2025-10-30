@@ -151,11 +151,13 @@ class StatementModel extends Backbone.Model {
 
   sendTerminated() {
     const model = Adapt.course;
+    const totalVideos = this.getTotalVideos();
+    const completedVideos = this.getCompletedVideos();
 
     this.setModelDuration(model);
 
     const { attributes } = this;
-    const statementModel = new TerminatedStatementModel(attributes);
+    const statementModel = new TerminatedStatementModel(attributes, { _sessionCounter: this._sessionCounter, _totalVideos: totalVideos, _completedVideos: completedVideos });
     const statement = statementModel.getData(model);
 
     this._terminate = true;

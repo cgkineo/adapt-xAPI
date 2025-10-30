@@ -4,16 +4,12 @@ class TerminatedStatementModel extends AbstractStatementModel {
 
   defaults() {
     return {
-      _sessionCounter: null,
-      _totalVideos: null,
-      _completedVideos: null
+      _sessionCounter: null
     };
   }
 
   initialize(attributes, options) {
     this._sessionCounter = options._sessionCounter;
-    this._totalVideos = options._totalVideos;
-    this._completedVideos = options._completedVideos;
 
     AbstractStatementModel.prototype.initialize.apply(this, arguments);
   }
@@ -43,11 +39,9 @@ class TerminatedStatementModel extends AbstractStatementModel {
   getContextExtensions(model) {
     const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
 
-    _.extend(extensions, {
+    Object.assign(extensions, {
       'http://id.tincanapi.com/extension/measurement': {
-        'Session Statements': this._sessionCounter + 1,
-        'Total Videos': this._totalVideos,
-        'Completed Videos': this._completedVideos
+        'Session Statements': this._sessionCounter + 1
       }
     });
 

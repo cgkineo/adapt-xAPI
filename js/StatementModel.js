@@ -136,7 +136,7 @@ class StatementModel extends Backbone.Model {
     this.setModelDuration(model);
 
     const { attributes } = this;
-    const statementModel = new TerminatedStatementModel(attributes);
+    const statementModel = new TerminatedStatementModel(attributes, { _sessionCounter: this._sessionCounter });
     const statement = statementModel.getData(model);
 
     this._terminate = true;
@@ -158,7 +158,7 @@ class StatementModel extends Backbone.Model {
     if (modelType === 'course' || modelType === 'page') this.setModelDuration(model);
 
     const { attributes } = this;
-    const statementModel = new CompletedStatementModel(attributes, { _type: type });
+    const statementModel = new CompletedStatementModel(attributes, { _type: type, _sessionCounter: this._sessionCounter });
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -274,6 +274,9 @@ class StatementModel extends Backbone.Model {
 
         logging.debug(`[${statement.id}]: ${response.status} - ${response.statusText}`);
 
+        // Increment session counter on successful send
+        this._sessionCounter++;
+
         // Reset failure counter on successful send
         this.consecutiveFailures = 0;
         this.hasShownLRSError = false;
@@ -348,6 +351,9 @@ class StatementModel extends Backbone.Model {
 
   onAdaptInitialize() {
     this.setupListeners();
+
+    // Initialize session counter
+    this._sessionCounter = 0;
 
     // restore _sessionStartTime for course, pages and components
     data.forEach((model) => {

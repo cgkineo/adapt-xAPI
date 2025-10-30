@@ -13,6 +13,7 @@ import SliderStatementModel from './statements/SliderStatementModel';
 import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStatementModel';
 import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
+import QuickQuestionsStatementModel from './statements/QuickQuestionsStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
 import CreatedStatementModel from './statements/CreatedStatementModel';
 import ReleasedStatementModel from './statements/ReleasedStatementModel';
@@ -22,6 +23,7 @@ class StatementModel extends Backbone.Model {
   defaults() {
     return {
       _tracking: {
+        _storeQuestionResponses: true,
         _questionInteractions: true,
         _assessmentsCompletion: false,
         _assessmentCompletion: true,
@@ -209,6 +211,9 @@ class StatementModel extends Backbone.Model {
         break;
       case 'matching':
         statementClass = MatchingStatementModel;
+        break;
+      case 'quickQuestions':
+        statementClass = QuickQuestionsStatementModel;
         break;
       default:
         logging.warn(`xAPI: No statement model found for question type '${questionType}'`);

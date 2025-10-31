@@ -39,7 +39,9 @@ class XAPI extends Backbone.Controller {
       'xapi:launchFailed': this.onLaunchFailed
     });
 
-    this.launchModel = new LaunchModel();
+    this.launchModel = new LaunchModel({}, {
+      _launchr: this._config._launchr
+    });
   }
 
   initializeState() {

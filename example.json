@@ -4,18 +4,27 @@
         "_isEnabled": true,
         "_isRestoreEnabled": true,
         "_isDebugModeEnabled": false,
-        "_comment": "included in tincan.xml. _activityId will be overriden if changed on the hosting environment.",
+        "_comment": "_activityId will be overridden if changed on the hosting environment.",
         "_activityId": "https://example.com/unique_identifier",
         "_revision": "",
         "_contentRelease": "0.0.0",
+        "_launchr": {
+            "_isEnabled": false,
+            "_domain": "https://fb.learninglocker.net/api/launchr",
+            "_auth": "Basic YourAuthTokenHere",
+            "_accountHomePage": "https://facebook-pilot.csod.com",
+            "_ttl": 480
+        },
         "_tracking": {
             "_storeQuestionResponses": true,
             "_questionInteractions": true,
             "_assessmentsCompletion": false,
             "_assessmentCompletion": true,
+            "_focusedStates": false,
             "_navbar": false,
             "_visua11y": false,
             "_glossary": false,
+            "_flexibleButtons": false,
             "_connectionErrors": false,
             "_inactivityTimout": false
         },

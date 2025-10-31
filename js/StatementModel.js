@@ -21,6 +21,10 @@ import CreatedStatementModel from './statements/CreatedStatementModel';
 import ReleasedStatementModel from './statements/ReleasedStatementModel';
 import ReceivedStatementModel from './statements/ReceivedStatementModel';
 import ViewedStatementModel from './statements/ViewedStatementModel';
+import AcknowledgedStatementModel from './statements/AcknowledgedStatementModel';
+import FocusedStatementModel from './statements/FocusedStatementModel';
+import UnfocusedStatementModel from './statements/UnfocusedStatementModel';
+import SatisfiedStatementModel from './statements/SatisfiedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -31,9 +35,11 @@ class StatementModel extends Backbone.Model {
         _questionInteractions: true,
         _assessmentsCompletion: false,
         _assessmentCompletion: true,
+        _focusedStates: false,
         _navbar: false,
         _visua11y: false,
         _glossary: false,
+        _flexibleButtons: false,
         _connectionErrors: false,
         _inactivityTimout: false
       },
@@ -98,6 +104,13 @@ class StatementModel extends Backbone.Model {
       });
     }
 
+    if (this._tracking._focusedStates) {
+      this.listenTo(Adapt, {
+        'focusedEvents:focused': this.onFocusState,
+        'focusedEvents:unfocused': this.onUnfocusState
+      });
+    }
+
     if (this._tracking._visua11y) {
       this.listenTo(Adapt, {
         'visua11y:opened': this.onVisua11yOpened,
@@ -110,6 +123,13 @@ class StatementModel extends Backbone.Model {
         'help:opened': this.onHelpOpened,
         'navigation:toggleDrawer': this.onDrawerOpened,
         'pageLevelProgress:toggleDrawer': this.onPLPDrawerOpened
+      });
+    }
+
+    if (this._tracking._flexibleButtons) {
+      this.listenTo(Adapt, {
+        'flexibleButtons:survey': this.onSurveyClicked,
+        'flexibleButtons:acknowledge': this.onAcknowledgedClicked
       });
     }
 
@@ -320,6 +340,46 @@ class StatementModel extends Backbone.Model {
   sendViewed(model) {
     const { attributes } = this;
     const statementModel = new ViewedStatementModel(attributes);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendAccessed(model) {
+    const { attributes } = this;
+    const statementModel = new AccessedStatementModel(attributes);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendAcknowledged(model) {
+    const { attributes } = this;
+    const statementModel = new AcknowledgedStatementModel(attributes);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendFocusState(model) {
+    const { attributes } = this;
+    const statementModel = new FocusedStatementModel(attributes);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendUnfocusState(model) {
+    const { attributes } = this;
+    const statementModel = new UnfocusedStatementModel(attributes);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendSatisfied(model) {
+    const { attributes } = this;
+    const statementModel = new SatisfiedStatementModel(attributes);
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -622,6 +682,40 @@ class StatementModel extends Backbone.Model {
 
   onGlossaryTermSelected(model) {
     this.sendViewed(model);
+  }
+
+  onSurveyClicked(data) {
+    const model = new Backbone.Model();
+    model.set({
+      title: data.text,
+      url: data.filename ? data.filename : data._link
+    });
+
+    this.sendAccessed(model);
+  }
+
+  onAcknowledgedClicked() {
+    this.sendAcknowledged(Adapt.course);
+  }
+
+  _handleFocusState(action) {
+    const model = data.findById(location._currentId);
+
+    if (model && model.get('_type') === 'course') {
+      this[action](Adapt.course);
+    }
+
+    if (model && model.get('_type') === 'page') {
+      this[action](this._currentPageModel);
+    }
+  }
+
+  onFocusState() {
+    this._handleFocusState('sendFocusState');
+  }
+
+  onUnfocusState() {
+    this._handleFocusState('sendUnfocusState');
   }
 
   resetModels() {

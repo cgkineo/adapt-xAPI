@@ -104,7 +104,7 @@ class StateModel extends Backbone.Model {
       } else {
         wait.begin();
 
-        const states = data;
+        const states = data || {};
 
         Async.each(states, (id, callback) => {
           this._fetchState(id, (err, data) => {
@@ -141,7 +141,7 @@ class StateModel extends Backbone.Model {
       } else {
         wait.begin();
 
-        const states = data;
+        const states = data || {};
 
         Async.each(states, (id, callback) => {
           this.delete(id, callback);
@@ -474,7 +474,7 @@ class StateModel extends Backbone.Model {
       } else {
         wait.begin();
 
-        const states = data;
+        const states = data || {};
 
         const statesToReset = states.filter((id) => {
           return id !== 'lang';

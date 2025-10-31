@@ -4,7 +4,7 @@ const OfflineStorageHandler = {
   model: new Backbone.Model(),
 
   get(name) {
-    if (!name) return undefined;
+    if (!name) return this.model.attributes;
 
     switch (name.toLowerCase()) {
       case 'student': {

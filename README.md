@@ -37,6 +37,18 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 **\_isDebugModeEnabled** (boolean): If enabled, the course will log detailed xAPI debug information to the console. The default value is `false`.
 
+**\_launchr** (object): Optional configuration for custom launch server integration, allowing courses to appear as SCORM packages to an LMS while connecting separately to an LRS.
+
+>**\_isEnabled** (boolean): If enabled, the course will use the launchr method to create an ADL launch session. The default value is `false`.
+
+>**\_domain** (string): The domain URL of your launch server. Example: `"https://example.com"`.
+
+>**\_auth** (string): Basic authentication token for the launch server. Example: `"Basic YourAuthTokenHere"`.
+
+>**\_accountHomePage** (string): The account homepage URL for the actor. Example: `"https://example.com"`.
+
+>**\_ttl** (number): Time-to-live for the launch session in minutes. The default value is `480` (8 hours).
+
 **\_tracking** (object): Contains settings for tracking different types of interactions.
 
 >**\_storeQuestionResponses** (boolean): If enabled, the course will restore question responses across browser sessions. The default value is `true`.
@@ -101,11 +113,52 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 ## Launch Types
 
-The plugin currently supports the [ADL xAPI Launch](https://github.com/adlnet/xapi-launch) and [Rustici launch](https://github.com/RusticiSoftware/launch/blob/master/lms_lrs.md#launch) methods. The ADL xAPI Launch method is recommended for the secure transmission of data, as the Launch Server acts as a proxy between Adapt and the LRS, so the content doesn't connect or use any credentials for the LRS directly.
+The plugin supports three launch methods for connecting to an LRS:
 
-For security reasons, the plugin does not support hardcoded LRS authentication credentials via _config.json_.
+### 1. Direct Launch (URL Parameters)
 
-For testing purposes, depending on the launch method, the ADL Launch Server credentials can be included in [adl_launch.html](required/adl_launch.html), or the LRS authentication credentials can be included in [launch.html](required/launch.html). **It is strongly recommended to remove these files for any course deliveries.**
+The most straightforward method where LRS credentials are passed via URL parameters. The course checks for `endpoint`, `auth`, and `actor` parameters in the URL and connects directly to the LRS.
+
+**Best for:** Quick testing and simple deployments where URL parameters can be safely passed.
+
+### 2. ADL xAPI Launch
+
+Uses the [ADL xAPI Launch](https://github.com/adlnet/xapi-launch) method where a Launch Server acts as a proxy between Adapt and the LRS. This is the recommended method for production deployments as credentials are not exposed to the client.
+
+**Best for:** Secure production deployments requiring credential protection.
+
+### 3. Launchr Method (Custom Launch Server)
+
+A custom launch method that allows courses to appear as SCORM packages to an LMS while connecting separately to an LRS. This method:
+
+1. Presents the course to the LMS as a standard SCORM package
+2. Creates an ADL launch session via HTTP POST to a custom launch server
+3. Retrieves learner information from `offlineStorage`
+4. Establishes xAPI tracking connection independently of the LMS
+
+**Configuration in _config.json_:**
+```json
+"_launchr": {
+  "_isEnabled": true,
+  "_domain": "https://your-launch-server.com",
+  "_auth": "Basic YourAuthTokenHere",
+  "_accountHomePage": "https://your-organization.com",
+  "_ttl": 480
+}
+```
+
+**Best for:** Organizations requiring both SCORM LMS compatibility and advanced xAPI tracking, or when LMS integration must be separated from LRS tracking.
+
+**Launch Priority:**
+1. If URL parameters contain `endpoint`, `auth`, and `actor` → Use Direct Launch
+2. Else if `_launchr._isEnabled` is `true` → Use Launchr Method  
+3. Else → Use ADL xAPI Launch
+
+### Security Considerations
+
+For security reasons, the plugin does not support hardcoded LRS authentication credentials via _config.json_ for direct LRS connections. All authentication must be handled through proper launch methods or URL parameters.
+
+When using the **Launchr Method**, authentication credentials are configured in `_config.json` under `_launchr._auth` and should be properly secured in your deployment process.
 
 ## Offline Queue
 
@@ -163,6 +216,10 @@ The granular detail of what is included within each statement and how to analyze
 | answered | `http://adlnet.gov/expapi/verbs/answered` | Sent each time a question component has been answered. |
 | passed | `http://adlnet.gov/expapi/verbs/passed` | Sent should a user achieve the required passmark for an assessment. |
 | failed | `http://adlnet.gov/expapi/verbs/failed` | Sent should a user score below the required passmark for an assessment. |
+| focused | `http://id.tincanapi.com/verb/focused` | Sent when the browser tab gains focus. |
+| unfocused | `http://id.tincanapi.com/verb/unfocused` | Sent when the browser tab loses focus. |
+| acknowledged | `http://activitystrea.ms/schema/1.0/acknowledge` | Sent when acknowledgment buttons are clicked. |
+| satisfied | `http://activitystrea.ms/schema/1.0/satisfy` | Sent to indicate course satisfaction with total duration. |
 
 ## Limitations and Known Issues
 

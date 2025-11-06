@@ -55,6 +55,24 @@ const Utils = {
 
   padZeros(num) {
     return num < 10 ? '0' + num : num.toString();
+  },
+
+  /**
+   * Color-coded console logging for xAPI debugging
+   * @param {string} message - The message to log
+   * @param {string} type - The log type: 'success', 'error', 'queue', 'info', 'warning'
+   */
+  slogf(message, type = 'info') {
+    const colors = {
+      success: 'green',
+      error: 'red',
+      queue: 'blue',
+      info: 'gray',
+      warning: 'orange'
+    };
+    const color = colors[type] || 'gray';
+
+    console.log(`%c[xAPI] ${message}`, `background: lightgray; color: ${color}; font-weight: ${type === 'error' ? 'bold' : 'normal'}`);
   }
 };
 

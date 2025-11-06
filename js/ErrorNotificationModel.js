@@ -6,6 +6,7 @@ import logging from 'core/js/logging';
 const LAUNCH_ERROR_ID = 'launch-error';
 const ACTIVITYID_ERROR_ID = 'activityId-error';
 const LRS_ERROR_ID = 'lrs-error';
+const STATEMENT_FAILURE_ID = 'statement-failure';
 
 class ErrorNotificationModel extends Backbone.Model {
 
@@ -27,6 +28,7 @@ class ErrorNotificationModel extends Backbone.Model {
       'xapi:launchError': this.onShowLaunchError,
       'xapi:activityIdError': this.onShowActivityIdError,
       'xapi:lrsError': this.onShowLRSError,
+      'xapi:statementFailure': this.onShowStatementFailure,
       'notify:closed': this.onNotifyClosed
     });
   }
@@ -62,7 +64,7 @@ class ErrorNotificationModel extends Backbone.Model {
 
     let isCancellable = true;
 
-    if (Object.prototype.hasOwnProperty.call(config, '_isCancellable')) {
+    if (config.hasOwnProperty('_isCancellable')) {
       isCancellable = config._isCancellable;
       notifyConfig._isCancellable = isCancellable;
       notifyConfig._closeOnShadowClick = !isCancellable;
@@ -94,6 +96,10 @@ class ErrorNotificationModel extends Backbone.Model {
 
   onShowLRSError() {
     this._showNotification(this.get('_lrs'), LRS_ERROR_ID);
+  }
+
+  onShowStatementFailure() {
+    this._showNotification(this.get('_statementFailure'), STATEMENT_FAILURE_ID);
   }
 
   onNotifyClosed(notify) {

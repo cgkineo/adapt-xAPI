@@ -3,7 +3,7 @@
 	"_xapi": {
         "_isEnabled": true,
         "_isRestoreEnabled": true,
-        "_isDebugModeEnabled": false,
+        "_debugModeEnabled": false,
         "_comment": "included in tincan.xml. _activityId will be overriden if changed on the hosting environment.",
         "_activityId": "https://example.com/unique_identifier",
         "_revision": "",
@@ -13,18 +13,7 @@
             "_questionInteractions": true,
             "_assessmentsCompletion": false,
             "_assessmentCompletion": true,
-            "_navbar": false,
-            "_visua11y": false,
-            "_glossary": false,
-            "_connectionErrors": false,
-            "_inactivityTimout": false
-        },
-        "_offlineQueue": {
-            "_isEnabled": false,
-            "_threshold": 10,
-            "_timeout": 5000,
-            "_maxRetries": 3,
-            "_retryDelay": 2000
+            "_statementFailures": false
         },
         "_errors": {
             "_launch": {
@@ -42,6 +31,12 @@
             "_activityId": {
                 "title": "Missing Activity IRI",
                 "body": "An Activity id has not been set. This activity will not be tracked.",
+                "_classes": "",
+                "_isCancellable": true
+            },
+            "_statementFailure": {
+                "title": "Statement submission failed",
+                "body": "There was a problem sending tracking data to the LRS. Some progress may not be saved.",
                 "_classes": "",
                 "_isCancellable": true
             }

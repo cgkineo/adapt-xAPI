@@ -9,7 +9,7 @@
 			window.location = 'index.html?endpoint=' + getLRSEndpoint() + '&actor=' + getActor() + '&auth=' + getAuth() + '&activity_id=' + getActivityId() + '&registration=' + getRegistration();
 
 			function getLRSEndpoint() {
-				var endpoint = "https://kineo.learninglocker.net/api/launchr";
+				var endpoint = "https://kineo.learninglocker.net/data/xAPI";
 
 				return encodeURIComponent(endpoint);
 			}
@@ -31,7 +31,7 @@
 			}
 
 			function getActivityId() {
-				var activityId = "https://kineo.learninglocker.net/adapt-kineo-xAPI-37/";
+				var activityId = "https://kineo.learninglocker.net/adapt-kineo-xAPI/";
 
 				return encodeURIComponent(activityId);
 			}

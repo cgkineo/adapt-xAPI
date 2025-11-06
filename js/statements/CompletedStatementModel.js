@@ -2,16 +2,8 @@ import AbstractStatementModel from './AbstractStatementModel';
 
 class CompletedStatementModel extends AbstractStatementModel {
 
-  defaults() {
-    return {
-      _type: null,
-      _sessionCounter: null
-    };
-  }
-
   initialize(attributes, options) {
     this._type = options._type;
-    this._sessionCounter = options._sessionCounter;
 
     AbstractStatementModel.prototype.initialize.apply(this, arguments);
   }
@@ -49,18 +41,6 @@ class CompletedStatementModel extends AbstractStatementModel {
       default:
         return null;
     }
-  }
-
-  getContextExtensions(model) {
-    const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
-
-    Object.assign(extensions, {
-      'http://id.tincanapi.com/extension/measurement': {
-        'Session Statements': this._sessionCounter + 1
-      }
-    });
-
-    return extensions;
   }
 
   getResult(model) {

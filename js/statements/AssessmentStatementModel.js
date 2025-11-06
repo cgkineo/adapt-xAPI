@@ -2,18 +2,6 @@ import AbstractStatementModel from './AbstractStatementModel';
 
 class AssessmentStatementModel extends AbstractStatementModel {
 
-  defaults() {
-    return {
-      _assessmentCounter: null
-    };
-  }
-
-  initialize(attributes, options) {
-    this._assessmentCounter = options._assessmentCounter;
-
-    AbstractStatementModel.prototype.initialize.apply(this, arguments);
-  }
-
   getData(model, state) {
     const statement = super.getData.apply(this, arguments);
     statement.verb = this.getVerb(state);
@@ -41,16 +29,6 @@ class AssessmentStatementModel extends AbstractStatementModel {
 
   getActivityType() {
     return ADL.activityTypes.assessment;
-  }
-
-  getContextExtensions(model, state) {
-    const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
-
-    _.extend(extensions, {
-      'http://id.tincanapi.com/extension/attempt-id': this._assessmentCounter
-    });
-
-    return extensions;
   }
 
   getResult(state) {

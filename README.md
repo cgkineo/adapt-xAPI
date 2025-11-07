@@ -35,7 +35,9 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 **\_isRestoreEnabled** (boolean): If enabled, the course will attempt to restore learner progress from the LRS using the State API. The default value is `true`.
 
-**\_isDebugModeEnabled** (boolean): If enabled, the course will log detailed xAPI debug information to the console. The default value is `false`.
+**\_debugModeEnabled** (boolean): If enabled, the course will log detailed xAPI debug information to the browser console, including statement sends, LRS responses, and error details with color-coded formatting. Useful for development and troubleshooting. The default value is `false`.
+
+**\_contentRelease** (string): Used to identify a specific release version of the course content. This can be useful for tracking different content iterations separately. The default value is `"0.0.0"`.
 
 **\_tracking** (object): Contains settings for tracking different types of interactions.
 
@@ -47,25 +49,7 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 >**\_assessmentCompletion** (boolean): If enabled, the course will send a statement when all assessments have been completed. The default value is `true`.
 
->**\_navbar** (boolean): If enabled, the course will send statements when navigation buttons are clicked. The default value is `false`.
-
->**\_visua11y** (boolean): If enabled, the course will send statements for Visua11y accessibility interactions. The default value is `false`.
-
->**\_connectionErrors** (boolean): If enabled, the course will send statements when LRS connection errors occur. The default value is `false`.
-
->**\_inactivityTimout** (boolean): If enabled, the course will send statements when user inactivity timeout is detected. The default value is `false`.
-
-**\_offlineQueue** (object): Configure offline queueing for unreliable network connections.
-
->**\_isEnabled** (boolean): If enabled, statements will be queued and retried when network connectivity is unreliable. The default value is `false`.
-
->**\_threshold** (number): Maximum number of statements to queue before triggering batch flush. The default value is `10`.
-
->**\_timeout** (number): How long to wait for LRS response before timing out (in milliseconds). The default value is `5000`.
-
->**\_maxRetries** (number): How many times to retry failed statements before giving up. The default value is `3`.
-
->**\_retryDelay** (number): How long to wait before retrying failed statements (in milliseconds). The default value is `2000`.
+>**\_statementFailures** (boolean): If enabled, the course will display error notifications to users when xAPI statements fail to send to the LRS. The default value is `false`.
 
 **\_errors** (object): Contains error notification configurations for different failure scenarios.
 
@@ -99,6 +83,16 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 >>**\_isCancellable** (boolean): If enabled, the user can close the notification and continue with an untracked session. The default value is `true`.
 
+>**\_statementFailure** (object): Configuration for errors when statements fail to send to the LRS.
+
+>>**title** (string): The title to display in the error notification. The default value is `"Statement submission failed"`.
+
+>>**body** (string): The body text to display in the error notification. The default value is `"There was a problem sending tracking data to the LRS. Some progress may not be saved."`.
+
+>>**\_classes** (string): List any CSS classes to attach to the notification pop-up. The default value is `""`.
+
+>>**\_isCancellable** (boolean): If enabled, the user can close the notification and continue with the session. The default value is `true`.
+
 ## Launch Types
 
 The plugin currently supports the [ADL xAPI Launch](https://github.com/adlnet/xapi-launch) and [Rustici launch](https://github.com/RusticiSoftware/launch/blob/master/lms_lrs.md#launch) methods. The ADL xAPI Launch method is recommended for the secure transmission of data, as the Launch Server acts as a proxy between Adapt and the LRS, so the content doesn't connect or use any credentials for the LRS directly.
@@ -107,33 +101,37 @@ For security reasons, the plugin does not support hardcoded LRS authentication c
 
 For testing purposes, depending on the launch method, the ADL Launch Server credentials can be included in [adl_launch.html](required/adl_launch.html), or the LRS authentication credentials can be included in [launch.html](required/launch.html). **It is strongly recommended to remove these files for any course deliveries.**
 
-## Offline Queue
+## Enhanced Error Handling and Reliability
 
-The offline queue feature provides robust handling for unreliable network connections. When enabled, xAPI statements are intelligently queued and retried rather than being lost due to connectivity issues.
+This version includes improved error handling and reliability features:
 
-### Features
+### Statement Retry Logic
 
-- **Automatic Retry Logic**: Failed statements are automatically retried with configurable delays and maximum attempts
-- **Batch Flushing**: Statements are batched and sent together when the queue reaches a configurable threshold
-- **Timeout Handling**: Network requests timeout gracefully using AbortController to prevent hung requests
-- **Keepalive Support**: Critical statements (like termination) use keepalive to ensure delivery even when the page is closing
-- **Debug Logging**: Detailed console logging when debug mode is enabled
+Failed xAPI statements are automatically retried with exponential backoff:
+- **First retry**: 2 seconds after failure
+- **Second retry**: 5 seconds after first retry
+- **Third retry**: 10 seconds after second retry
+- **Maximum retries**: 3 attempts before giving up
 
-### Configuration
+### Request Timeout Handling
 
-Enable the offline queue in _config.json_:
+Network requests use AbortController with a 20-second timeout to prevent hung requests that could impact the user experience.
 
-```json
-"_offlineQueue": {
-  "_isEnabled": true,
-  "_threshold": 10,
-  "_timeout": 5000,
-  "_maxRetries": 3,
-  "_retryDelay": 2000
-}
-```
+### Critical Statement Delivery
 
-The queue will automatically handle network interruptions, retrying failed statements in the background while allowing the learner to continue their session uninterrupted.
+Critical statements (such as course termination) use the Fetch API's `keepalive` flag to ensure delivery even when the browser is closing or navigating away from the page.
+
+### Debug Mode
+
+When `_debugModeEnabled` is set to `true`, the plugin logs detailed information to the browser console:
+- **Statement sends**: Color-coded success/failure messages
+- **Retry attempts**: Shows which attempt and delay
+- **Error details**: HTTP status codes and response messages
+- **LRS configuration**: Launch parameters and endpoint detection
+
+### Non-blocking State Loading
+
+State restoration from the LRS is non-blocking - if the LRS is unavailable, the course will continue loading rather than hanging indefinitely. This ensures learners can always access content even when connectivity is poor.
 
 ## Recipe
 

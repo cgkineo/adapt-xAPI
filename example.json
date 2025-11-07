@@ -13,7 +13,11 @@
             "_questionInteractions": true,
             "_assessmentsCompletion": false,
             "_assessmentCompletion": true,
-            "_statementFailures": false
+            "_statementFailures": false,
+            "_navbar": false,
+            "_resources": false,
+            "_glossary": false,
+            "_connectionErrors": false
         },
         "_errors": {
             "_launch": {

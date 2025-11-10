@@ -13,7 +13,20 @@
             "_questionInteractions": true,
             "_assessmentsCompletion": false,
             "_assessmentCompletion": true,
-            "_statementFailures": false
+            "_statementFailures": false,
+            "_offlineQueue": {
+                "_isEnabled": true,
+                "_retryDelays": [
+                    0,
+                    2000,
+                    5000,
+                    10000,
+                    20000
+                ],
+                "_requestTimeout": 20000,
+                "_queueFlushTimeout": 10000,
+                "_queueThreshold": 5
+            }
         },
         "_errors": {
             "_launch": {

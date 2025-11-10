@@ -4,15 +4,22 @@ import location from 'core/js/location';
 import Utils from './Utils';
 import InitializedStatementModel from './statements/InitializedStatementModel';
 import TerminatedStatementModel from './statements/TerminatedStatementModel';
-import LanguageStatementModel from './statements/LanguageStatementModel';
+import PreferredLanguageStatementModel from './statements/PreferredLanguageStatementModel';
+import PreferredStatementModel from './statements/PreferredStatementModel';
 import CompletedStatementModel from './statements/CompletedStatementModel';
 import ExperiencedStatementModel from './statements/ExperiencedStatementModel';
+import InteractedStatementModel from './statements/InteractedStatementModel';
+import ReceivedStatementModel from './statements/ReceivedStatementModel';
 import McqStatementModel from './statements/McqStatementModel';
 import SliderStatementModel from './statements/SliderStatementModel';
 import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStatementModel';
 import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
+import QuickQuestionsStatementModel from './statements/QuickQuestionsStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
+import SatisfiedStatementModel from './statements/SatisfiedStatementModel';
+import AccessedStatementModel from './statements/AccessedStatementModel';
+import AcknowledgedStatementModel from './statements/AcknowledgedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -22,7 +29,11 @@ class StatementModel extends Backbone.Model {
         _questionInteractions: true,
         _assessmentsCompletion: false,
         _assessmentCompletion: true,
-        _statementFailures: false
+        _statementFailures: false,
+        _navbar: false,
+        _visua11y: false,
+        _flexibleButtons: false,
+        _inactivityTimeout: false
       },
       xAPIWrapper: null,
       _isInitialized: false,
@@ -88,6 +99,35 @@ class StatementModel extends Backbone.Model {
       });
     }
 
+    if (this._tracking._navbar) {
+      this.listenTo(Adapt, {
+        'help:opened': this.onHelpOpened,
+        'navigation:toggleDrawer': this.onDrawerOpened,
+        'pageLevelProgress:toggleDrawer': this.onPLPDrawerOpened
+      });
+    }
+
+    if (this._tracking._visua11y) {
+      this.listenTo(Adapt, {
+        'visua11y:opened': this.onVisua11yOpened,
+        'visua11y:toggle': this.onVisua11yToggle
+      });
+    }
+
+    if (this._tracking._flexibleButtons) {
+      this.listenTo(Adapt, {
+        'flexibleButtons:survey': this.onSurveyClicked,
+        'flexibleButtons:acknowledge': this.onAcknowledgedClicked
+      });
+    }
+
+    if (this._tracking._inactivityTimeout) {
+      this.listenTo(Adapt, {
+        'tracking:inactivityError': this.onInactivityError
+      });
+    }
+
+    // Legacy support - kept for backward compatibility
     if (this._tracking._trackingErrors) {
       this.listenTo(Adapt, {
         'tracking:initializeError': this.onInitializeError,
@@ -144,7 +184,7 @@ class StatementModel extends Backbone.Model {
 
   sendPreferredLanguage() {
     const { attributes } = this;
-    const statementModel = new LanguageStatementModel(attributes);
+    const statementModel = new PreferredLanguageStatementModel(attributes);
     const statement = statementModel.getData(Adapt.course, Adapt.config.get('_activeLanguage'));
 
     this.send(statement);
@@ -152,10 +192,14 @@ class StatementModel extends Backbone.Model {
 
   sendCompleted(model, type) {
     const modelType = model.get('_type');
-    if (modelType === 'course' || modelType === 'page') this.setModelDuration(model);
+    if (modelType === 'course' || modelType === 'page') {
+      this.setModelDuration(model);
+    }
 
     const { attributes } = this;
-    const statementModel = new CompletedStatementModel(attributes, { _type: type });
+    const statementModel = new CompletedStatementModel(attributes, {
+      _type: type
+    });
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -197,6 +241,9 @@ class StatementModel extends Backbone.Model {
       case 'matching':
         statementClass = MatchingStatementModel;
         break;
+      case 'quickQuestions':
+        statementClass = QuickQuestionsStatementModel;
+        break;
     }
 
     const statementModel = new statementClass(attributes);
@@ -209,6 +256,52 @@ class StatementModel extends Backbone.Model {
     const { attributes } = this;
     const statementModel = new AssessmentStatementModel(attributes);
     const statement = statementModel.getData(model, state);
+
+    this.send(statement);
+  }
+
+  sendInteracted(type) {
+    const model = Adapt.course;
+
+    const config = this.attributes;
+    const statementModel = new InteractedStatementModel(config, { _type: type });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendReceived(type) {
+    const model = Adapt.course;
+
+    const config = this.attributes;
+    const statementModel = new ReceivedStatementModel(config, { _type: type });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendSurveyAccessed(model) {
+    const config = this.attributes;
+    const statementModel = new AccessedStatementModel(config);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendAcknowledgedClicked(model) {
+    const config = this.attributes;
+    const statementModel = new AcknowledgedStatementModel(config);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendPreferred(name, state) {
+    const model = Adapt.course;
+
+    const config = this.attributes;
+    const statementModel = new PreferredStatementModel(config, { _name: name, _state: state });
+    const statement = statementModel.getData(model);
 
     this.send(statement);
   }
@@ -512,6 +605,40 @@ class StatementModel extends Backbone.Model {
     this.sendQuestionAnswered(view.model);
   }
 
+  onHelpOpened() {
+    this.sendInteracted('help');
+  }
+
+  onDrawerOpened() {
+    this.sendInteracted('drawer');
+  }
+
+  onPLPDrawerOpened() {
+    this.sendInteracted('pageLevelProgress');
+  }
+
+  onVisua11yOpened() {
+    this.sendInteracted('accessibility');
+  }
+
+  onVisua11yToggle(model, name, state) {
+    this.sendPreferred(name, state);
+  }
+
+  onSurveyClicked(data) {
+    const model = new Backbone.Model();
+    model.set({
+      title: data.text,
+      url: data.filename ? data.filename : data._link
+    });
+
+    this.sendSurveyAccessed(model);
+  }
+
+  onAcknowledgedClicked() {
+    this.sendAcknowledgedClicked(Adapt.course);
+  }
+
   onInitializeError() {
     this.sendReceived('Initialization Error');
   }
@@ -528,10 +655,17 @@ class StatementModel extends Backbone.Model {
     this.sendReceived('Termination Error');
   }
 
+  onInactivityError() {
+    this.sendReceived('Inactivity Popup');
+  }
+
   onVisibilityChange() {
-    // set durations to ensure State loss is minimised for durations data, if terminate didn't fire
+    // Set durations to ensure State loss is minimised for durations data,
+    // if terminate didn't fire
     if (document.visibilityState === 'hidden' && !this._terminate) {
-      if (this._currentPageModel) this.setModelDuration(this._currentPageModel);
+      if (this._currentPageModel) {
+        this.setModelDuration(this._currentPageModel);
+      }
 
       this.setModelDuration(Adapt.course);
     }

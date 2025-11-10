@@ -51,6 +51,16 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 >**\_statementFailures** (boolean): If enabled, the course will display error notifications to users when xAPI statements fail to send to the LRS. The default value is `false`.
 
+>**\_navbar** (boolean): If enabled, tracks navigation interactions including help, drawer, and page level progress. Requires `adapt-contrib-pageLevelProgress` for drawer tracking. The default value is `false`.
+
+>**\_visua11y** (boolean): If enabled, tracks accessibility preference changes. Requires `adapt-visua11y`. The default value is `false`.
+
+>**\_flexibleButtons** (boolean): If enabled, tracks survey access and acknowledgement interactions. Requires `adapt-flexibleButtons`. The default value is `false`.
+
+>**\_connectionErrors** (boolean): If enabled, tracks connection and initialization errors. The default value is `false`.
+
+>**\_inactivityTimeout** (boolean): If enabled, tracks inactivity popup notifications. Requires `adapt-inactivityTimeout`. The default value is `false`.
+
 **\_errors** (object): Contains error notification configurations for different failure scenarios.
 
 >**\_launch** (object): Configuration for errors associated with a failed launch when connecting to the LRS.
@@ -148,6 +158,8 @@ The granular detail of what is included within each statement and how to analyze
 | `http://adlnet.gov/expapi/activities/interaction` | Defines a component model. |
 | `http://adlnet.gov/expapi/activities/cmi.interaction` | Defines a question component model. |
 | `http://adlnet.gov/expapi/activities/assessment` | Defines an assessment article model and/or the overall assessment. |
+| `http://adlnet.gov/expapi/activities/profile` | Defines accessibility and language preferences. |
+| `http://id.tincanapi.com/activitytype/resource` | Defines resource access (surveys from flexibleButtons). |
 
 ### Verbs
 
@@ -155,12 +167,79 @@ The granular detail of what is included within each statement and how to analyze
 |--|--|--|
 | initialized | `http://adlnet.gov/expapi/verbs/initialized` | Sent once the course has been launched, to indicate the start of the session. |
 | terminated | `http://adlnet.gov/expapi/verbs/terminated` | Sent once the course has been closed, to indicate the end of a session. |
-| preferred | `http://adlnet.gov/expapi/verbs/preferred` | Sent to indicate a user's language preference. |
+| preferred | `http://adlnet.gov/expapi/verbs/preferred` | Sent to indicate a user's language or accessibility preference. |
 | completed | `http://adlnet.gov/expapi/verbs/completed` | Sent once an activity within the course has been completed. By default, restricted to course and page models. Component completion can be enabled as required for each model in _components.json_ via `_recordCompletion: true`. |
 | experienced | `http://adlnet.gov/expapi/verbs/experienced` | Sent each time a user leaves a page. |
 | answered | `http://adlnet.gov/expapi/verbs/answered` | Sent each time a question component has been answered. |
 | passed | `http://adlnet.gov/expapi/verbs/passed` | Sent should a user achieve the required passmark for an assessment. |
 | failed | `http://adlnet.gov/expapi/verbs/failed` | Sent should a user score below the required passmark for an assessment. |
+| interacted | `http://adlnet.gov/expapi/verbs/interacted` | Sent when users interact with navigation elements (help, drawer, page level progress, accessibility controls). |
+| accessed | `https://activitystrea.ms/schema/1.0/access` | Sent when users access resources (surveys from flexibleButtons). |
+| acknowledged | `http://activitystrea.ms/schema/1.0/acknowledge` | Sent when users acknowledge content (from flexibleButtons). |
+| received | `http://activitystrea.ms/schema/1.0/receive` | Sent when tracking errors occur (initialization, data, connection, termination, inactivity). |
+
+## Kineo Plugin Support
+
+This extension includes specialized tracking support for Kineo plugins. These tracking options are disabled by default and must be explicitly enabled in the `_tracking` configuration object.
+
+### Navigation Tracking (`_navbar`)
+
+Tracks user interactions with navigation elements:
+- **Help drawer** - Triggered when users open the help functionality
+- **Navigation drawer** - Triggered when users toggle the main navigation drawer
+- **Page Level Progress** - Triggered when users open the PLP drawer
+
+**Required Plugin**: `adapt-contrib-pageLevelProgress` (for drawer tracking)
+
+**Statements Generated**: Uses the "interacted" verb with context extensions indicating the interaction type.
+
+### Accessibility Tracking (`_visua11y`)
+
+Tracks accessibility preference changes:
+- **Accessibility drawer opened** - Triggered when users open accessibility controls
+- **Preference changes** - Tracks individual accessibility preference toggles (e.g., color schemes, font sizes)
+
+**Required Plugin**: `adapt-visua11y`
+
+**Statements Generated**: 
+- "interacted" verb when the accessibility drawer is opened
+- "preferred" verb when accessibility preferences are changed, with condition-type and condition-value extensions
+
+### Flexible Buttons Tracking (`_flexibleButtons`)
+
+Tracks interactions with flexible button components:
+- **Survey access** - Triggered when users access surveys
+- **Acknowledgements** - Triggered when users acknowledge content
+
+**Required Plugin**: `adapt-flexibleButtons`
+
+**Statements Generated**:
+- "accessed" verb for survey interactions
+- "acknowledged" verb for acknowledgement interactions
+
+### Quick Questions Support
+
+Adds support for the `adapt-quickQuestions` component, automatically tracking responses when `_questionInteractions` is enabled.
+
+**Required Plugin**: `adapt-quickQuestions`
+
+### Connection Error Tracking (`_connectionErrors`)
+
+Tracks various error conditions:
+- Initialization errors
+- Data errors
+- Connection errors
+- Termination errors
+
+**Statements Generated**: Uses the "received" verb with the error type in the statement name and context extensions.
+
+### Inactivity Tracking (`_inactivityTimeout`)
+
+Tracks when the inactivity timeout popup is displayed to users.
+
+**Required Plugin**: `adapt-inactivityTimeout`
+
+**Statements Generated**: Uses the "received" verb with "Inactivity Popup" as the condition type.
 
 ## Limitations and Known Issues
 

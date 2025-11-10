@@ -133,6 +133,36 @@ When `_debugModeEnabled` is set to `true`, the plugin logs detailed information 
 
 State restoration from the LRS is non-blocking - if the LRS is unavailable, the course will continue loading rather than hanging indefinitely. This ensures learners can always access content even when connectivity is poor.
 
+## Offline Queue Configuration
+
+The `_offlineQueue` object within `_tracking` supports batching and retry logic for xAPI statements:
+
+| Property | Type | Default | Description |
+|--|--|--|--|
+| \_isEnabled | Boolean | `true` | Enables queuing of statements when they cannot be sent immediately.
+| \_retryDelays | Array | `[0, 2000, 5000, 10000, 20000]` | Array of delays (in milliseconds) between retry attempts for initial statement sends. Supports up to 5 retry attempts with increasing backoff.
+| \_requestTimeout | Number | `20000` | Maximum time (in milliseconds) to wait for an xAPI request to complete before timing out. Used for initial statement sends. Recommended: 20000ms for external LRS hosting and VPN environments.
+| \_queueFlushTimeout | Number | `10000` | Timeout (in milliseconds) for sending queued statements during a flush. Shorter than `_requestTimeout` since statements already attempted with full retry logic before queuing. Defaults to 10000ms if not specified.
+| \_queueThreshold | Number | `5` | Minimum number of statements required in the queue before automatic batch flushing occurs. Critical statements (course completed, satisfied, terminated) bypass this threshold and are sent immediately.
+
+**Behavior:**
+- **Normal Statements**: Queued and sent in batches when the queue exceeds the `_queueThreshold`.
+- **Critical Statements** (course completed, satisfied, terminated): Sent immediately with `keepalive: true` to ensure delivery even during window close.
+- **Failed Statements**: Automatically queued and retried. Each queued statement gets 1 additional retry attempt during flush with a 2s delay.
+- **Course Completion/Unload**: Queue is force-flushed regardless of threshold to ensure all pending statements are sent.
+- **Guaranteed Delivery**: Queue flush continues even if individual statements fail. Failed statements remain queued for the next flush attempt.
+
+**Recommended Settings for 200k+ Users with External LRS/LMS Hosting:**
+```json
+"_offlineQueue": {
+  "_isEnabled": true,
+  "_retryDelays": [0, 2000, 5000, 10000, 20000],
+  "_requestTimeout": 20000,
+  "_queueFlushTimeout": 10000,
+  "_queueThreshold": 5
+}
+```
+
 ## Recipe
 
 A recipe is a standard way of expressing a particular type of action in a recorded statement. There are many ways of expressing the same action, so without a recipe, it can cause issues when analyzing the data as there is no consistency in how that action is expressed.
@@ -161,6 +191,8 @@ The granular detail of what is included within each statement and how to analyze
 | answered | `http://adlnet.gov/expapi/verbs/answered` | Sent each time a question component has been answered. |
 | passed | `http://adlnet.gov/expapi/verbs/passed` | Sent should a user achieve the required passmark for an assessment. |
 | failed | `http://adlnet.gov/expapi/verbs/failed` | Sent should a user score below the required passmark for an assessment. |
+| created | `http://activitystrea.ms/schema/1.0/create` | Sent when the offline statement queue is created. |
+| released | `http://future-learning.info/xAPI/verb/released` | Sent when queued statements are successfully flushed to the LRS. |
 
 ## Limitations and Known Issues
 

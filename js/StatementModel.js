@@ -2,6 +2,7 @@ import Adapt from 'core/js/adapt';
 import data from 'core/js/data';
 import location from 'core/js/location';
 import Utils from './Utils';
+import OfflineQueueModel from './OfflineQueueModel';
 import InitializedStatementModel from './statements/InitializedStatementModel';
 import TerminatedStatementModel from './statements/TerminatedStatementModel';
 import LanguageStatementModel from './statements/LanguageStatementModel';
@@ -13,6 +14,8 @@ import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStateme
 import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
+import CreatedStatementModel from './statements/CreatedStatementModel';
+import ReleasedStatementModel from './statements/ReleasedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -49,6 +52,10 @@ class StatementModel extends Backbone.Model {
     // Store debug mode flag from xAPI config root level
     const xapiConfig = Adapt.config.get('_xapi');
     this._debugModeEnabled = xapiConfig?._debugModeEnabled || false;
+
+    this.offlineQueue = this._tracking._offlineQueue?._isEnabled
+      ? new OfflineQueueModel(options)
+      : null;
   }
 
   setupListeners() {
@@ -94,6 +101,13 @@ class StatementModel extends Backbone.Model {
         'tracking:dataError': this.onDataError,
         'tracking:connectionError': this.onConnectionError,
         'tracking:terminationError': this.onTerminationError
+      });
+    }
+
+    if (this._tracking._offlineQueue?._isEnabled) {
+      this.listenTo(Adapt, {
+        'queue:create': this.onQueueCreate,
+        'queue:release': this.onQueueRelease
       });
     }
   }
@@ -213,116 +227,308 @@ class StatementModel extends Backbone.Model {
     this.send(statement);
   }
 
+  sendCreated(name) {
+    const model = Adapt.course;
+
+    const config = this.attributes;
+    const statementModel = new CreatedStatementModel(config, { _name: name });
+    const statement = statementModel.getData(model);
+
+    Adapt.trigger('queue:created', statement);
+  }
+
+  sendReleased(name, length, reason) {
+    const model = Adapt.course;
+
+    const config = this.attributes;
+    const statementModel = new ReleasedStatementModel(config, {
+      _name: name,
+      _length: length,
+      _reason: reason
+    });
+    const statement = statementModel.getData(model);
+
+    Adapt.trigger('queue:released', statement);
+  }
+
   /*
    * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
    */
   async send(statement) {
     const verbName = statement.verb.display.en;
-    const objectName = statement.object?.definition?.name?.en || statement.object?.id || 'unknown';
+    const objectName = statement.object?.definition?.name?.en ||
+      statement.object?.id || 'unknown';
+    const isDebugEnabled = this._debugModeEnabled;
 
-    const maxRetries = 3;
-    const retryDelays = [2000, 5000, 10000];
-    const requestTimeout = 20000;
-    let attempt = 0;
+    if (this.offlineQueue?.isSending) {
+      if (isDebugEnabled) {
+        Utils.slogf(
+          `⊕ ${verbName} | Object: ${objectName} | Added to queue (flush in progress)`,
+          'queue'
+        );
+      }
+      this.offlineQueue.queueStatement(statement);
+      return false;
+    }
 
-    while (attempt < maxRetries) {
-      attempt++;
+    if (this.offlineQueue) {
+      await this.offlineQueue.checkQueue();
 
-      try {
-        const response = await this._executeFetch(statement, {
-          timeout: requestTimeout
-        });
+      const maxRetries = this._tracking._offlineQueue._retryDelays.length;
+      const retryDelays = this._tracking._offlineQueue._retryDelays;
+      const requestTimeout = this._tracking._offlineQueue._requestTimeout;
+      let attempt = 0;
 
-        if (!response.ok) {
-          const errorMsg = await this._logFetchError(null, response, verbName, objectName);
-          if (this._debugModeEnabled) {
-            Utils.slogf(`✗ ${verbName} | Object: ${objectName} | ${errorMsg} | Attempt ${attempt}/${maxRetries}`, 'error');
+      while (attempt < maxRetries) {
+        attempt++;
+
+        try {
+          const response = await this._executeFetch(statement, {
+            timeout: requestTimeout
+          });
+
+          if (!response.ok) {
+            const errorMsg = await this._logFetchError(
+              null, response, verbName, objectName
+            );
+            if (isDebugEnabled) {
+              Utils.slogf(
+                `✗ ${verbName} | Object: ${objectName} | ${errorMsg} | Attempt ${attempt}/${maxRetries}`,
+                'error'
+              );
+            }
+
+            if (attempt < maxRetries) {
+              await new Promise(
+                resolve => setTimeout(resolve, retryDelays[attempt - 1])
+              );
+              continue;
+            }
+
+            this.offlineQueue.queueStatement(statement);
+            if (isDebugEnabled) {
+              Utils.slogf(
+                `✗ ${verbName} | Object: ${objectName} | Queued after ${maxRetries} attempts`,
+                'error'
+              );
+            }
+            return false;
+          }
+
+          if (isDebugEnabled) {
+            Utils.slogf(`✓ ${verbName} | Object: ${objectName}`, 'success');
+          }
+
+          if (this.offlineQueue.queue.length > 0) {
+            setTimeout(() => {
+              this.offlineQueue.flushQueue('opportunistic', { force: true });
+            }, 0);
+          }
+
+          return true;
+
+        } catch (error) {
+          const errorMsg = await this._logFetchError(
+            error, null, verbName, objectName, true
+          );
+          if (isDebugEnabled) {
+            Utils.slogf(
+              `✗ ${verbName} | Object: ${objectName} | ${errorMsg} | Attempt ${attempt}/${maxRetries}`,
+              'error'
+            );
           }
 
           if (attempt < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, retryDelays[attempt - 1]));
+            await new Promise(
+              resolve => setTimeout(resolve, retryDelays[attempt - 1])
+            );
             continue;
           }
 
-          if (this._tracking._statementFailures) {
-            this.showErrorNotification();
+          this.offlineQueue.queueStatement(statement);
+          if (isDebugEnabled) {
+            Utils.slogf(
+              `✗ ${verbName} | Object: ${objectName} | Queued after ${maxRetries} attempts`,
+              'error'
+            );
           }
           return false;
         }
+      }
+    }
 
-        if (this._debugModeEnabled) {
-          Utils.slogf(`✓ ${verbName} | Object: ${objectName}`, 'success');
-        }
-        return true;
+    try {
+      const response = await this._executeFetch(statement);
 
-      } catch (error) {
-        const errorMsg = await this._logFetchError(error, null, verbName, objectName, true);
-        if (this._debugModeEnabled) {
-          Utils.slogf(`✗ ${verbName} | Object: ${objectName} | ${errorMsg} | Attempt ${attempt}/${maxRetries}`, 'error');
-        }
-
-        if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, retryDelays[attempt - 1]));
-          continue;
-        }
-
-        if (this._tracking._statementFailures) {
-          this.showErrorNotification();
+      if (!response.ok) {
+        const errorMsg = await this._logFetchError(
+          null, response, verbName, objectName
+        );
+        if (isDebugEnabled) {
+          Utils.slogf(
+            `✗ ${verbName} | Object: ${objectName} | ${errorMsg}`,
+            'error'
+          );
         }
         return false;
       }
+
+      if (isDebugEnabled) {
+        Utils.slogf(`✓ ${verbName} | Object: ${objectName}`, 'success');
+      }
+      return true;
+
+    } catch (error) {
+      const errorMsg = await this._logFetchError(
+        error, null, verbName, objectName, true
+      );
+      if (isDebugEnabled) {
+        Utils.slogf(
+          `✗ ${verbName} | Object: ${objectName} | ${errorMsg}`,
+          'error'
+        );
+      }
+      return false;
     }
   }
 
   async sendCriticalStatement(statement) {
     const verbName = statement.verb.display.en;
-    const objectName = statement.object?.definition?.name?.en || statement.object?.id || 'unknown';
-    const requestTimeout = 20000;
+    const objectName = statement.object?.definition?.name?.en ||
+      statement.object?.id || 'unknown';
+    const isDebugEnabled = this._debugModeEnabled;
+
+    if (this.offlineQueue?.isSending) {
+      if (isDebugEnabled) {
+        Utils.slogf(
+          `⊕ ${verbName} (critical) | Object: ${objectName} | Added to queue (flush in progress)`,
+          'queue'
+        );
+      }
+      statement._isCritical = true;
+      this.offlineQueue.queueStatement(statement);
+      return false;
+    }
+
+    if (this.offlineQueue) {
+      const requestTimeout = this._tracking._offlineQueue._requestTimeout;
+
+      try {
+        const response = await this._executeFetch(statement, {
+          isCritical: true,
+          timeout: requestTimeout
+        });
+
+        if (!response.ok) {
+          const errorMsg = await this._logFetchError(
+            null, response, verbName, objectName
+          );
+          if (isDebugEnabled) {
+            Utils.slogf(
+              `✗ ${verbName} (critical) | Object: ${objectName} | ${errorMsg}`,
+              'error'
+            );
+          }
+
+          statement._isCritical = true;
+          this.offlineQueue.queueStatement(statement);
+
+          for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+              this.offlineQueue.flushQueue('critical', { force: true });
+            }, i * 200);
+          }
+
+          return false;
+        }
+
+        if (isDebugEnabled) {
+          Utils.slogf(
+            `✓ ${verbName} (critical) | Object: ${objectName}`,
+            'success'
+          );
+        }
+
+        if (this.offlineQueue.queue.length > 0) {
+          setTimeout(() => {
+            this.offlineQueue.flushQueue('opportunistic', { force: true });
+          }, 0);
+        }
+
+        return true;
+
+      } catch (error) {
+        const errorMsg = await this._logFetchError(
+          error, null, verbName, objectName, true
+        );
+        if (isDebugEnabled) {
+          Utils.slogf(
+            `✗ ${verbName} (critical) | Object: ${objectName} | ${errorMsg}`,
+            'error'
+          );
+        }
+
+        statement._isCritical = true;
+        this.offlineQueue.queueStatement(statement);
+
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => {
+            this.offlineQueue.flushQueue('critical', { force: true });
+          }, i * 200);
+        }
+
+        return false;
+      }
+    }
 
     try {
       const response = await this._executeFetch(statement, {
-        isCritical: true,
-        timeout: requestTimeout
+        isCritical: true
       });
 
       if (!response.ok) {
-        const errorMsg = await this._logFetchError(null, response, verbName, objectName);
-        if (this._debugModeEnabled) {
-          Utils.slogf(`✗ ${verbName} (critical) | Object: ${objectName} | ${errorMsg}`, 'error');
-        }
-
-        if (this._tracking._statementFailures) {
-          this.showErrorNotification();
+        const errorMsg = await this._logFetchError(
+          null, response, verbName, objectName
+        );
+        if (isDebugEnabled) {
+          Utils.slogf(
+            `✗ ${verbName} (critical) | Object: ${objectName} | ${errorMsg}`,
+            'error'
+          );
         }
         return false;
       }
 
-      if (this._debugModeEnabled) {
-        Utils.slogf(`✓ ${verbName} (critical) | Object: ${objectName}`, 'success');
+      if (isDebugEnabled) {
+        Utils.slogf(
+          `✓ ${verbName} (critical) | Object: ${objectName}`,
+          'success'
+        );
       }
       return true;
 
     } catch (error) {
-      const errorMsg = await this._logFetchError(error, null, verbName, objectName, true);
-      if (this._debugModeEnabled) {
-        Utils.slogf(`✗ ${verbName} (critical) | Object: ${objectName} | ${errorMsg}`, 'error');
-      }
-
-      if (this._tracking._statementFailures) {
-        this.showErrorNotification();
+      const errorMsg = await this._logFetchError(
+        error, null, verbName, objectName, true
+      );
+      if (isDebugEnabled) {
+        Utils.slogf(
+          `✗ ${verbName} (critical) | Object: ${objectName} | ${errorMsg}`,
+          'error'
+        );
       }
       return false;
     }
   }
 
   async _executeFetch(statement, options = {}) {
-    const { timeout = 20000, isCritical = false } = options;
+    const { timeout = 20000 } = options;
     const url = `${this.xAPIWrapper.lrs.endpoint}statements`;
     const data = JSON.stringify(statement);
 
     const fetchOptions = {
       method: 'POST',
-      keepalive: isCritical || this._terminate,
+      keepalive: true,
       headers: {
         'Content-Type': 'application/json',
         Authorization: this.xAPIWrapper.lrs.auth,
@@ -336,7 +542,7 @@ class StatementModel extends Backbone.Model {
     let controller;
     let timeoutId;
 
-    if (timeout > 0 && !isCritical) {
+    if (timeout > 0) {
       controller = new AbortController();
       fetchOptions.signal = controller.signal;
       timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -506,6 +712,12 @@ class StatementModel extends Backbone.Model {
     this.sendCompleted(Adapt.course);
 
     // no need to use completionData.assessment due to assessment:complete listener, which isn't restricted to only firing on tracking:complete
+
+    if (this.offlineQueue) {
+      setTimeout(async () => {
+        await this.offlineQueue.flushQueue('completion', { force: true });
+      }, 250);
+    }
   }
 
   onQuestionInteraction(view) {
@@ -526,6 +738,14 @@ class StatementModel extends Backbone.Model {
 
   onTerminationError() {
     this.sendReceived('Termination Error');
+  }
+
+  onQueueCreate() {
+    this.sendCreated('Statement Queue');
+  }
+
+  onQueueRelease(queueLength, reason) {
+    this.sendReleased('Statement Queue', queueLength, reason);
   }
 
   onVisibilityChange() {
@@ -550,6 +770,10 @@ class StatementModel extends Backbone.Model {
       }
 
       this.sendTerminated();
+
+      if (this.offlineQueue) {
+        this.offlineQueue.flushQueue('unload', { force: true });
+      }
     }
   }
 }

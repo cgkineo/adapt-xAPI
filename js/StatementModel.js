@@ -21,10 +21,13 @@ import CreatedStatementModel from './statements/CreatedStatementModel';
 import ReleasedStatementModel from './statements/ReleasedStatementModel';
 import ReceivedStatementModel from './statements/ReceivedStatementModel';
 import ViewedStatementModel from './statements/ViewedStatementModel';
+import AccessedStatementModel from './statements/AccessedStatementModel';
 import AcknowledgedStatementModel from './statements/AcknowledgedStatementModel';
 import FocusedStatementModel from './statements/FocusedStatementModel';
 import UnfocusedStatementModel from './statements/UnfocusedStatementModel';
 import SatisfiedStatementModel from './statements/SatisfiedStatementModel';
+import AcceptedStatementModel from './statements/AcceptedStatementModel';
+import DeniedStatementModel from './statements/DeniedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -149,6 +152,20 @@ class StatementModel extends Backbone.Model {
       });
     }
 
+    if (this._tracking._focusedStates) {
+      this.listenTo(Adapt, {
+        'focusedEvents:focused': this.onFocusState,
+        'focusedEvents:unfocused': this.onUnfocusState
+      });
+    }
+
+    if (this._tracking._courseAutoCorrect) {
+      this.listenTo(Adapt, {
+        'autoCorrect:denied': this.onAutoCorrectDenied,
+        'autoCorrect:accepted': this.onAutoCorrectAccepted
+      });
+    }
+
     // Listen for queue events if offline queue is enabled
     const xapiConfig = Adapt.config.get('_xapi');
     if (xapiConfig._offlineQueue?._isEnabled) {
@@ -193,7 +210,13 @@ class StatementModel extends Backbone.Model {
 
   sendInitialized() {
     const { attributes } = this;
-    const statementModel = new InitializedStatementModel(attributes);
+    const statementModel = new InitializedStatementModel(attributes, {
+      _totalPageCount: this.totalPageCount,
+      _requiredVideoCount: this.requiredVideoCount,
+      _languageSelect: this.languageSelect,
+      _requiredQuestionCount: this.requiredQuestionCount,
+      _assessmentCount: this.assessmentCount
+    });
     const statement = statementModel.getData(Adapt.course);
 
     this.send(statement);
@@ -307,6 +330,56 @@ class StatementModel extends Backbone.Model {
     this.send(statement);
   }
 
+  sendSatisfied(model, type) {
+    const { attributes } = this;
+    const statementModel = new SatisfiedStatementModel(attributes);
+    const statement = statementModel.getData(model);
+
+    this.sendCriticalStatement(statement);
+  }
+
+  sendFocusState(model) {
+    const { attributes } = this;
+    const statementModel = new FocusedStatementModel(attributes);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendUnfocusState(model) {
+    const { attributes } = this;
+    const statementModel = new UnfocusedStatementModel(attributes);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendAccepted(name, type) {
+    const model = Adapt.course;
+
+    const { attributes } = this;
+    const statementModel = new AcceptedStatementModel(attributes, {
+      _name: name,
+      _type: type
+    });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendDenied(name, type) {
+    const model = Adapt.course;
+
+    const { attributes } = this;
+    const statementModel = new DeniedStatementModel(attributes, {
+      _name: name,
+      _type: type
+    });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
   sendInteracted(type) {
     const model = Adapt.course;
 
@@ -356,30 +429,6 @@ class StatementModel extends Backbone.Model {
   sendAcknowledged(model) {
     const { attributes } = this;
     const statementModel = new AcknowledgedStatementModel(attributes);
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendFocusState(model) {
-    const { attributes } = this;
-    const statementModel = new FocusedStatementModel(attributes);
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendUnfocusState(model) {
-    const { attributes } = this;
-    const statementModel = new UnfocusedStatementModel(attributes);
-    const statement = statementModel.getData(model);
-
-    this.send(statement);
-  }
-
-  sendSatisfied(model) {
-    const { attributes } = this;
-    const statementModel = new SatisfiedStatementModel(attributes);
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -515,11 +564,105 @@ class StatementModel extends Backbone.Model {
     }
   }
 
+  createGlobalVariables() {
+    this._sessionCounter = 0;
+    this._assessmentCounter = 0;
+    this.totalPageCount = this.getTotalPages().length;
+    this.requiredVideoCount = this.getRequiredVideos().length;
+    this.languageSelect = this.getLanguageSelect();
+    this.requiredQuestionCount = this.getEssentialQuestions().length;
+    this.assessmentCount = this.getAssessments().length;
+  }
+
+  getTotalPages() {
+    const pages = Adapt.course.findDescendantModels('contentobject');
+    return pages;
+  }
+
+  getRequiredVideos() {
+    const requiredVideos = Adapt.course.findDescendantModels('component', {
+      where: { _component: 'media', _isOptional: false }
+    });
+    return requiredVideos;
+  }
+
+  getLanguageSelect() {
+    const config = Adapt.config.get('_languagePicker');
+    const languageSelect = config?._isEnabled;
+    if (!languageSelect) return 0;
+    return 1;
+  }
+
+  getEssentialQuestions() {
+    let count = 0;
+
+    const allArticles = Adapt.course.findDescendantModels('article', {
+      where: { _isOptional: false, _isAvailable: true }
+    });
+
+    // 2. Separate branching and non-branching articles
+    const branchingArticles = allArticles.filter(article =>
+      article.get('_branching')?._isEnabled === true
+    );
+    const nonBranchingArticles = allArticles.filter(article =>
+      !article.get('_branching')?._isEnabled
+    );
+
+    // 3. Get all required questions in non-branching articles
+    nonBranchingArticles.forEach(article => {
+      const questions = article.findDescendantModels('component', {
+        where: { _isQuestionType: true, _isOptional: false }
+      });
+      count += questions.length;
+    });
+
+    // 4. For each branching article, count max required questions across branches
+    branchingArticles.forEach(article => {
+      const branching = article.get('_branching');
+      const branches = branching._branches;
+
+      let maxQuestionsInBranches = 0;
+
+      branches.forEach(branch => {
+        const branchBlockIds = branch._blocks || [];
+        let branchQuestionCount = 0;
+
+        branchBlockIds.forEach(blockId => {
+          const block = Adapt.findById(blockId);
+          if (!block) return;
+
+          const questions = block.findDescendantModels('component', {
+            where: { _isQuestionType: true, _isOptional: false }
+          });
+          branchQuestionCount += questions.length;
+        });
+
+        maxQuestionsInBranches = Math.max(
+          maxQuestionsInBranches,
+          branchQuestionCount
+        );
+      });
+
+      count += maxQuestionsInBranches;
+    });
+
+    return count;
+  }
+
+  getAssessments() {
+    const articles = Adapt.course.findDescendantModels('article');
+    const assessments = articles.filter(element => {
+      const assessment = element.get('_assessment');
+      return assessment && assessment._isEnabled === true;
+    });
+
+    return assessments;
+  }
+
   onAdaptInitialize() {
     this.setupListeners();
 
-    // Initialize session counter
-    this._sessionCounter = 0;
+    this.createGlobalVariables();
 
     // restore _sessionStartTime for course, pages and components
     data.forEach((model) => {
@@ -626,10 +769,11 @@ class StatementModel extends Backbone.Model {
     this.sendAssessmentCompleted(model, state);
   }
 
-  onTrackingComplete() {
+  onTrackingComplete(completionData) {
     const model = Adapt.course;
 
     this.sendCompleted(model, 'course');
+    this.sendSatisfied(model, completionData);
   }
 
   onQueueCreate() {
@@ -716,6 +860,14 @@ class StatementModel extends Backbone.Model {
 
   onUnfocusState() {
     this._handleFocusState('sendUnfocusState');
+  }
+
+  onAutoCorrectDenied(reason) {
+    this.sendDenied('Course Auto Correct', reason);
+  }
+
+  onAutoCorrectAccepted(type) {
+    this.sendAccepted('Course Auto Correct', type);
   }
 
   resetModels() {

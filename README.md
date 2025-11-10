@@ -59,6 +59,10 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 >**\_assessmentCompletion** (boolean): If enabled, the course will send a statement when all assessments have been completed. The default value is `true`.
 
+>**\_focusedStates** (boolean): If enabled, the course will send statements when the browser window/tab gains or loses focus. Requires the **adapt-focusedEvents** plugin. The default value is `false`.
+
+>**\_courseAutoCorrect** (boolean): If enabled, the course will send statements when auto-correct actions are accepted or denied. Requires the **adapt-courseAutoCorrect** plugin. The default value is `false`.
+
 >**\_navbar** (boolean): If enabled, the course will send statements when navigation buttons are clicked. The default value is `false`.
 
 >**\_visua11y** (boolean): If enabled, the course will send statements for Visua11y accessibility interactions. The default value is `false`.
@@ -216,10 +220,12 @@ The granular detail of what is included within each statement and how to analyze
 | answered | `http://adlnet.gov/expapi/verbs/answered` | Sent each time a question component has been answered. |
 | passed | `http://adlnet.gov/expapi/verbs/passed` | Sent should a user achieve the required passmark for an assessment. |
 | failed | `http://adlnet.gov/expapi/verbs/failed` | Sent should a user score below the required passmark for an assessment. |
-| focused | `http://id.tincanapi.com/verb/focused` | Sent when the browser tab gains focus. |
-| unfocused | `http://id.tincanapi.com/verb/unfocused` | Sent when the browser tab loses focus. |
+| focused | `http://id.tincanapi.com/verb/focused` | Sent when the browser tab gains focus (requires `_tracking._focusedStates` and **adapt-focusedEvents**). |
+| unfocused | `http://id.tincanapi.com/verb/unfocused` | Sent when the browser tab loses focus (requires `_tracking._focusedStates` and **adapt-focusedEvents**). |
+| accepted | `http://www.tincanapi.co.uk/verbs/accepted` | Sent when auto-correct actions are accepted (requires `_tracking._courseAutoCorrect` and **adapt-courseAutoCorrect**). |
+| denied | `http://www.tincanapi.co.uk/verbs/denied` | Sent when auto-correct actions are denied (requires `_tracking._courseAutoCorrect` and **adapt-courseAutoCorrect**). |
 | acknowledged | `http://activitystrea.ms/schema/1.0/acknowledge` | Sent when acknowledgment buttons are clicked. |
-| satisfied | `http://activitystrea.ms/schema/1.0/satisfy` | Sent to indicate course satisfaction with total duration. |
+| satisfied | `http://activitystrea.ms/schema/1.0/satisfy` | Sent when the user completes the course, indicating satisfaction with total duration. |
 
 ## Limitations and Known Issues
 

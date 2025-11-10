@@ -21,6 +21,7 @@
             "_assessmentsCompletion": false,
             "_assessmentCompletion": true,
             "_focusedStates": false,
+            "_courseAutoCorrect": false,
             "_navbar": false,
             "_visua11y": false,
             "_glossary": false,

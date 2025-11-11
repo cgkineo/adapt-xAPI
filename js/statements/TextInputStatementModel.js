@@ -1,7 +1,7 @@
 import QuestionStatementModel from './QuestionStatementModel';
 
 class TextInputStatementModel extends QuestionStatementModel {
-  
+
   getInteractionObject(model) {
     const correctResponsesPattern = this.getCorrectResponsesPattern(model);
     if (correctResponsesPattern === null) return {};
@@ -29,7 +29,6 @@ class TextInputStatementModel extends QuestionStatementModel {
 
     return correctAnswers.flat();
   }
-
 }
 
 export default TextInputStatementModel;

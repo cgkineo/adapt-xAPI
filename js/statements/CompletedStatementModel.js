@@ -2,6 +2,12 @@ import AbstractStatementModel from './AbstractStatementModel';
 
 class CompletedStatementModel extends AbstractStatementModel {
 
+  initialize(attributes, options) {
+    this._type = options._type;
+
+    AbstractStatementModel.prototype.initialize.apply(this, arguments);
+  }
+
   getData(model) {
     const statement = super.getData.apply(this, arguments);
 

@@ -26,7 +26,6 @@ class SliderStatementModel extends QuestionStatementModel {
       ];
     }
   }
-  
 }
 
 export default SliderStatementModel;

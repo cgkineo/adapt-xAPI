@@ -10,7 +10,7 @@ class ConfidenceSliderStatementModel extends QuestionStatementModel {
 
     return result;
   }
-  
+
 }
 
 export default ConfidenceSliderStatementModel;

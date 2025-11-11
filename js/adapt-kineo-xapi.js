@@ -1,5 +1,4 @@
 import Adapt from 'core/js/adapt';
-import wait from 'core/js/wait';
 import offlineStorage from 'core/js/offlineStorage';
 import OfflineStorageHandler from './OfflineStorageHandler';
 import ErrorNotificationModel from './ErrorNotificationModel';
@@ -58,12 +57,19 @@ class xAPI extends Backbone.Controller {
   }
 
   initializeStatement() {
+    const AdaptPlugins = Adapt.build.get('plugins');
+    const xAPIPlugin = AdaptPlugins?.find(plugin => plugin.name === 'adapt-xAPI');
+    const xAPIVersion = xAPIPlugin ? xAPIPlugin.version : null;
+
     const config = {
       activityId: this.getActivityId(),
       registration: this.launchModel.get('registration'),
-      revision: this._config._revision || null,
+      revision: this._config._revision || xAPIVersion || null,
+      contentRelease: this._config._contentRelease || null,
       actor: this.launchModel.get('actor'),
-      contextActivities: this.launchModel.get('contextActivities')
+      contextActivities: this.launchModel.get('contextActivities'),
+      lang: Adapt.config.get('_activeLanguage') || 'en',
+      recipeLang: Adapt.config.get('_defaultLanguage') || 'en'
     };
 
     this.statementModel = new StatementModel(config, {
@@ -92,14 +98,14 @@ class xAPI extends Backbone.Controller {
   onPrepareOfflineStorage() {
     this._config = Adapt.config.get('_xapi');
 
-    if (this._config?._isEnabled) {
-      wait.begin();
+    if (!this._config?._isEnabled) return;
 
-      offlineStorage.initialize(OfflineStorageHandler);
+    this._restoredLanguage = offlineStorage.get('lang');
 
-      this.initializeErrorNotification();
-      this.initializeLaunch();
-    }
+    offlineStorage.initialize(OfflineStorageHandler);
+
+    this.initializeErrorNotification();
+    this.initializeLaunch();
   }
 
   onLaunchInitialized() {
@@ -112,7 +118,6 @@ class xAPI extends Backbone.Controller {
     }
 
     this.listenToOnce(Adapt, {
-      'offlineStorage:ready': this.onOfflineStorageReady,
       'app:dataLoaded': this.onDataLoaded,
       'adapt:initialize': this.onAdaptInitialize
     });
@@ -126,13 +131,7 @@ class xAPI extends Backbone.Controller {
   }
 
   onLaunchFailed() {
-    wait.end();
-
     offlineStorage.setReadyStatus();
-  }
-
-  onOfflineStorageReady() {
-    this._restoredLanguage = offlineStorage.get('lang');
   }
 
   onLanguageChanged(newLanguage, previousLanguage) {
@@ -149,7 +148,6 @@ class xAPI extends Backbone.Controller {
   }
 
   onStateLoaded() {
-    wait.end();
     offlineStorage.setReadyStatus();
   }
 

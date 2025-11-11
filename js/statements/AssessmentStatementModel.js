@@ -43,6 +43,10 @@ class AssessmentStatementModel extends AbstractStatementModel {
 
     return result;
   }
+
+  getAttempt(model) {
+    return model.get('_attempts') - model.get('_attemptsLeft');
+  }
 }
 
 export default AssessmentStatementModel;

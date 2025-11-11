@@ -1,4 +1,6 @@
-import Adapt from "core/js/adapt";
+import Adapt from 'core/js/adapt';
+import wait from 'core/js/wait';
+import Utils from './Utils';
 
 class LaunchModel extends Backbone.Model {
 
@@ -16,17 +18,27 @@ class LaunchModel extends Backbone.Model {
   }
 
   initialize() {
+    wait.begin();
     this.initializeLaunch();
   }
 
   initializeLaunch() {
     const { lrs } = ADL.XAPIWrapper;
 
+    // Debug logging for development
+    const xapiConfig = Adapt.config.get('_xapi');
+    if (xapiConfig?._debugModeEnabled) {
+      Utils.slogf(`Launch: Checking LRS configuration - endpoint: ${!!lrs.endpoint}, auth: ${!!lrs.auth}, actor: ${!!lrs.actor}`, 'info');
+    }
+
     /**
      * can auth be sent through in a different process, e.g. OAuth?
      * lrs.endpoint && lrs.auth have defaults in the ADL xAPIWrapper, so can't assume their existence means they are the correct credentials - errors will be handled when communicating with the LRS
      */
     if (lrs.endpoint && lrs.auth && lrs.actor) {
+      if (xapiConfig?._debugModeEnabled) {
+        Utils.slogf('Launch: Direct launch parameters detected', 'info');
+      }
       this._xAPIWrapper = ADL.XAPIWrapper;
 
       // add trailing slash if missing in endpoint
@@ -54,6 +66,9 @@ class LaunchModel extends Backbone.Model {
 
       this.triggerLaunchInitialized();
     } else {
+      if (xapiConfig?._debugModeEnabled) {
+        Utils.slogf('Launch: No direct parameters, attempting ADL.launch', 'info');
+      }
       ADL.launch(this.onADLLaunchAttempt.bind(this), false);
     }
   }
@@ -67,6 +82,7 @@ class LaunchModel extends Backbone.Model {
   }
 
   triggerLaunchInitialized() {
+    wait.end();
     setTimeout(function() {
       Adapt.trigger('xapi:launchInitialized');
     }, 0);
@@ -83,36 +99,36 @@ class LaunchModel extends Backbone.Model {
         this.onReload();
         return;
       }
-    
+
       if (this._retryCount < this._retryLimit) {
         this._retryCount++;
         this.initializeLaunch();
         return;
       }
-    
+
       this.onLaunchFail();
       return;
     }
-    
+
     this._xAPIWrapper = wrapper;
-    
+
     // can ADL launch include registration?
     const launchData = {
       registration: launchdata.registration || null,
       actor: launchdata.actor
     };
-    
+
     const contextActivities = launchdata.contextActivities;
     if (contextActivities && Object.keys(contextActivities).length > 0) {
       launchData.contextActivities = contextActivities;
     }
-    
+
     this.set(launchData);
-    
+
     // store launch server details should browser be reloaded and launch server session still initialized
     sessionStorage.setItem('lrs', JSON.stringify(wrapper.lrs));
     sessionStorage.setItem('launchData', JSON.stringify(launchData));
-    
+
     this.triggerLaunchInitialized();
   }
 
@@ -135,6 +151,13 @@ class LaunchModel extends Backbone.Model {
   }
 
   onLaunchFail() {
+    const xapiConfig = Adapt.config.get('_xapi');
+    if (xapiConfig?._debugModeEnabled) {
+      Utils.slogf('Launch: Launch failed - triggering error notification', 'error');
+    }
+
+    wait.end();
+
     Adapt.trigger('xapi:launchFailed');
 
     this.showErrorNotification();

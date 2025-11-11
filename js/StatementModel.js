@@ -1,18 +1,18 @@
-import Adapt from "core/js/adapt";
-import data from "core/js/data";
-import location from "core/js/location";
-import logging from "core/js/logging";
-import InitializedStatementModel from "./statements/InitializedStatementModel";
-import TerminatedStatementModel from "./statements/TerminatedStatementModel";
-import LanguageStatementModel from "./statements/LanguageStatementModel";
-import CompletedStatementModel from "./statements/CompletedStatementModel";
-import ExperiencedStatementModel from "./statements/ExperiencedStatementModel";
-import McqStatementModel from "./statements/McqStatementModel";
-import SliderStatementModel from "./statements/SliderStatementModel";
-import ConfidenceSliderStatementModel from "./statements/ConfidenceSliderStatementModel";
-import TextInputStatementModel from "./statements/TextInputStatementModel";
-import MatchingStatementModel from "./statements/MatchingStatementModel";
-import AssessmentStatementModel from "./statements/AssessmentStatementModel";
+import Adapt from 'core/js/adapt';
+import data from 'core/js/data';
+import location from 'core/js/location';
+import Utils from './Utils';
+import InitializedStatementModel from './statements/InitializedStatementModel';
+import TerminatedStatementModel from './statements/TerminatedStatementModel';
+import LanguageStatementModel from './statements/LanguageStatementModel';
+import CompletedStatementModel from './statements/CompletedStatementModel';
+import ExperiencedStatementModel from './statements/ExperiencedStatementModel';
+import McqStatementModel from './statements/McqStatementModel';
+import SliderStatementModel from './statements/SliderStatementModel';
+import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStatementModel';
+import TextInputStatementModel from './statements/TextInputStatementModel';
+import MatchingStatementModel from './statements/MatchingStatementModel';
+import AssessmentStatementModel from './statements/AssessmentStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -21,14 +21,15 @@ class StatementModel extends Backbone.Model {
       _tracking: {
         _questionInteractions: true,
         _assessmentsCompletion: false,
-        _assessmentCompletion: true
+        _assessmentCompletion: true,
+        _statementFailures: false
       },
       xAPIWrapper: null,
       _isInitialized: false,
       _hasLanguageChanged: false,
       _courseSessionStartTime: null,
       _currentPageModel: null,
-      _terminate: false,
+      _terminate: false
     };
   }
 
@@ -37,13 +38,17 @@ class StatementModel extends Backbone.Model {
       'adapt:initialize': this.onAdaptInitialize,
       'xapi:languageChanged': this.onLanguageChanged
     });
-    
+
     // Instance Variables
     const { wrapper, _tracking } = options;
     this.xAPIWrapper = wrapper;
     this._tracking = { ...this.defaults()._tracking, ..._tracking };
 
     Object.assign(this._tracking, options._tracking);
+
+    // Store debug mode flag from xAPI config root level
+    const xapiConfig = Adapt.config.get('_xapi');
+    this._debugModeEnabled = xapiConfig?._debugModeEnabled || false;
   }
 
   setupListeners() {
@@ -56,7 +61,7 @@ class StatementModel extends Backbone.Model {
     $(document).on('visibilitychange', this._onVisibilityChange);
 
     this._onWindowUnload = () => this.onWindowUnload();
-    $(window).on('beforeunload unload', this._onWindowUnload);
+    $(window).on('pagehide', this._onWindowUnload);
 
     this.listenTo(Adapt, {
       'pageView:ready': this.onPageViewReady,
@@ -114,7 +119,7 @@ class StatementModel extends Backbone.Model {
   }
 
   showErrorNotification() {
-    Adapt.trigger('xapi:lrsError');
+    Adapt.trigger('xapi:statementFailure');
   }
 
   sendInitialized() {
@@ -134,7 +139,7 @@ class StatementModel extends Backbone.Model {
     const statementModel = new TerminatedStatementModel(attributes);
     const statement = statementModel.getData(model);
 
-    this.send(statement);
+    this.sendCriticalStatement(statement);
   }
 
   sendPreferredLanguage() {
@@ -145,12 +150,12 @@ class StatementModel extends Backbone.Model {
     this.send(statement);
   }
 
-  sendCompleted(model) {
+  sendCompleted(model, type) {
     const modelType = model.get('_type');
     if (modelType === 'course' || modelType === 'page') this.setModelDuration(model);
 
     const { attributes } = this;
-    const statementModel = new CompletedStatementModel(attributes);
+    const statementModel = new CompletedStatementModel(attributes, { _type: type });
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -208,32 +213,190 @@ class StatementModel extends Backbone.Model {
     this.send(statement);
   }
 
-  /*
-   * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
+  /**
+   * Sends an xAPI statement to the LRS with automatic retry logic.
+   * Implements progressive retry delays (2s, 5s, 10s) and timeout handling.
+   * Displays error notifications to users if _statementFailures tracking is enabled.
+   * @async
+   * @param {Object} statement - xAPI statement object following TinCan specification
+   * @param {Object} statement.verb - xAPI verb definition with id and display
+   * @param {Object} statement.object - xAPI activity object being acted upon
+   * @param {Object} statement.actor - xAPI actor (learner) definition
+   * @returns {Promise<boolean>} True if statement sent successfully, false otherwise
+   * @example
+   * const success = await this.send(statement);
+   * if (!success) {
+   *   console.log('Statement failed after retries');
+   * }
    */
-  send(statement) {
-    const { lrs, xapiVersion } = this.xAPIWrapper;
-    const url = `${lrs.endpoint}statements`;
+  async send(statement) {
+    const verbName = statement.verb.display.en;
+    const objectName = statement.object?.definition?.name?.en || statement.object?.id || 'unknown';
+
+    const maxRetries = 3;
+    const retryDelays = [2000, 5000, 10000];
+    const requestTimeout = 20000;
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+      attempt++;
+
+      try {
+        const response = await this._executeFetch(statement, {
+          timeout: requestTimeout
+        });
+
+        if (!response.ok) {
+          const errorMsg = await this._logFetchError(null, response, verbName, objectName);
+          if (this._debugModeEnabled) {
+            Utils.slogf(`✗ ${verbName} | Object: ${objectName} | ${errorMsg} | Attempt ${attempt}/${maxRetries}`, 'error');
+          }
+
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelays[attempt - 1]));
+            continue;
+          }
+
+          if (this._tracking._statementFailures) {
+            this.showErrorNotification();
+          }
+          return false;
+        }
+
+        if (this._debugModeEnabled) {
+          Utils.slogf(`✓ ${verbName} | Object: ${objectName}`, 'success');
+        }
+        return true;
+
+      } catch (error) {
+        const errorMsg = await this._logFetchError(error, null, verbName, objectName, true);
+        if (this._debugModeEnabled) {
+          Utils.slogf(`✗ ${verbName} | Object: ${objectName} | ${errorMsg} | Attempt ${attempt}/${maxRetries}`, 'error');
+        }
+
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelays[attempt - 1]));
+          continue;
+        }
+
+        if (this._tracking._statementFailures) {
+          this.showErrorNotification();
+        }
+        return false;
+      }
+    }
+  }
+
+  /**
+   * Sends a critical xAPI statement that must be delivered (e.g., 'terminated' on page unload).
+   * Uses fetch keepalive flag to ensure delivery even if page closes.
+   * Does NOT retry - sends once and relies on keepalive for guaranteed delivery.
+   * @async
+   * @param {Object} statement - xAPI statement object for critical events
+   * @returns {Promise<boolean>} True if request initiated successfully, false otherwise
+   * @example
+   * // Send terminated statement on page unload
+   * await this.sendCriticalStatement(terminatedStatement);
+   */
+  async sendCriticalStatement(statement) {
+    const verbName = statement.verb.display.en;
+    const objectName = statement.object?.definition?.name?.en || statement.object?.id || 'unknown';
+    const requestTimeout = 20000;
+
+    try {
+      const response = await this._executeFetch(statement, {
+        isCritical: true,
+        timeout: requestTimeout
+      });
+
+      if (!response.ok) {
+        const errorMsg = await this._logFetchError(null, response, verbName, objectName);
+        if (this._debugModeEnabled) {
+          Utils.slogf(`✗ ${verbName} (critical) | Object: ${objectName} | ${errorMsg}`, 'error');
+        }
+
+        if (this._tracking._statementFailures) {
+          this.showErrorNotification();
+        }
+        return false;
+      }
+
+      if (this._debugModeEnabled) {
+        Utils.slogf(`✓ ${verbName} (critical) | Object: ${objectName}`, 'success');
+      }
+      return true;
+
+    } catch (error) {
+      const errorMsg = await this._logFetchError(error, null, verbName, objectName, true);
+      if (this._debugModeEnabled) {
+        Utils.slogf(`✗ ${verbName} (critical) | Object: ${objectName} | ${errorMsg}`, 'error');
+      }
+
+      if (this._tracking._statementFailures) {
+        this.showErrorNotification();
+      }
+      return false;
+    }
+  }
+
+  async _executeFetch(statement, options = {}) {
+    const { timeout = 20000, isCritical = false } = options;
+    const url = `${this.xAPIWrapper.lrs.endpoint}statements`;
     const data = JSON.stringify(statement);
 
-    fetch(url, {
-      keepalive: this._terminate,
+    const fetchOptions = {
       method: 'POST',
+      keepalive: isCritical || this._terminate,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: lrs.auth,
-        'X-Experience-API-Version': xapiVersion
+        Authorization: this.xAPIWrapper.lrs.auth,
+        'X-Experience-API-Version': this.xAPIWrapper.xapiVersion
       },
       body: data
-    }).then((response) => {
-      logging.debug(`[${statement.id}]: ${response.status} - ${response.statusText}`);
+    };
 
-      if (!response.ok) throw Error(response.statusText);
+    // Use timeout/AbortController for standard statements
+    // Note: AbortController won't work if page closes, but keepalive ensures delivery
+    let controller;
+    let timeoutId;
+
+    if (timeout > 0 && !isCritical) {
+      controller = new AbortController();
+      fetchOptions.signal = controller.signal;
+      timeoutId = setTimeout(() => controller.abort(), timeout);
+    }
+
+    try {
+      const response = await fetch(url, fetchOptions);
+
+      if (timeoutId) clearTimeout(timeoutId);
 
       return response;
-    }).catch(error => {
-      this.showErrorNotification();
-    });
+    } catch (error) {
+      if (timeoutId) clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+
+  async _logFetchError(error, response, verbName, objectName, isNetworkError = false) {
+    if (isNetworkError) {
+      return `Network error: ${error.name === 'AbortError' ? 'Timeout' : error.message}`;
+    }
+
+    if (response && !response.ok) {
+      let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const responseText = await response.text();
+        if (responseText) {
+          errorDetails += ` | Response: ${responseText}`;
+        }
+      } catch (textError) {
+        errorDetails += ' | Unable to read response body';
+      }
+      return errorDetails;
+    }
+
+    return error.message;
   }
 
   setModelSessionStartTime(model, restoredTime) {
@@ -372,7 +535,7 @@ class StatementModel extends Backbone.Model {
   onQuestionInteraction(view) {
     this.sendQuestionAnswered(view.model);
   }
-  
+
   onInitializeError() {
     this.sendReceived('Initialization Error');
   }

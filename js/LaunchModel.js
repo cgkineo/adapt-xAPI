@@ -1,5 +1,6 @@
 import Adapt from 'core/js/adapt';
 import wait from 'core/js/wait';
+import Utils from './Utils';
 
 class LaunchModel extends Backbone.Model {
 
@@ -27,13 +28,7 @@ class LaunchModel extends Backbone.Model {
     // Debug logging for development
     const xapiConfig = Adapt.config.get('_xapi');
     if (xapiConfig?._debugModeEnabled) {
-      console.log('[xAPI Launch] Checking LRS configuration:', {
-        hasEndpoint: !!lrs.endpoint,
-        hasAuth: !!lrs.auth,
-        hasActor: !!lrs.actor,
-        endpoint: lrs.endpoint,
-        actor: lrs.actor
-      });
+      Utils.slogf(`Launch: Checking LRS configuration - endpoint: ${!!lrs.endpoint}, auth: ${!!lrs.auth}, actor: ${!!lrs.actor}`, 'info');
     }
 
     /**
@@ -42,7 +37,7 @@ class LaunchModel extends Backbone.Model {
      */
     if (lrs.endpoint && lrs.auth && lrs.actor) {
       if (xapiConfig?._debugModeEnabled) {
-        console.log('[xAPI Launch] Direct launch parameters detected');
+        Utils.slogf('Launch: Direct launch parameters detected', 'info');
       }
       this._xAPIWrapper = ADL.XAPIWrapper;
 
@@ -72,7 +67,7 @@ class LaunchModel extends Backbone.Model {
       this.triggerLaunchInitialized();
     } else {
       if (xapiConfig?._debugModeEnabled) {
-        console.log('[xAPI Launch] No direct parameters, attempting ADL.launch');
+        Utils.slogf('Launch: No direct parameters, attempting ADL.launch', 'info');
       }
       ADL.launch(this.onADLLaunchAttempt.bind(this), false);
     }
@@ -158,7 +153,7 @@ class LaunchModel extends Backbone.Model {
   onLaunchFail() {
     const xapiConfig = Adapt.config.get('_xapi');
     if (xapiConfig?._debugModeEnabled) {
-      console.error('[xAPI Launch] Launch failed - triggering error notification');
+      Utils.slogf('Launch: Launch failed - triggering error notification', 'error');
     }
 
     wait.end();

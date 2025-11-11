@@ -213,8 +213,21 @@ class StatementModel extends Backbone.Model {
     this.send(statement);
   }
 
-  /*
-   * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
+  /**
+   * Sends an xAPI statement to the LRS with automatic retry logic.
+   * Implements progressive retry delays (2s, 5s, 10s) and timeout handling.
+   * Displays error notifications to users if _statementFailures tracking is enabled.
+   * @async
+   * @param {Object} statement - xAPI statement object following TinCan specification
+   * @param {Object} statement.verb - xAPI verb definition with id and display
+   * @param {Object} statement.object - xAPI activity object being acted upon
+   * @param {Object} statement.actor - xAPI actor (learner) definition
+   * @returns {Promise<boolean>} True if statement sent successfully, false otherwise
+   * @example
+   * const success = await this.send(statement);
+   * if (!success) {
+   *   console.log('Statement failed after retries');
+   * }
    */
   async send(statement) {
     const verbName = statement.verb.display.en;
@@ -274,6 +287,17 @@ class StatementModel extends Backbone.Model {
     }
   }
 
+  /**
+   * Sends a critical xAPI statement that must be delivered (e.g., 'terminated' on page unload).
+   * Uses fetch keepalive flag to ensure delivery even if page closes.
+   * Does NOT retry - sends once and relies on keepalive for guaranteed delivery.
+   * @async
+   * @param {Object} statement - xAPI statement object for critical events
+   * @returns {Promise<boolean>} True if request initiated successfully, false otherwise
+   * @example
+   * // Send terminated statement on page unload
+   * await this.sendCriticalStatement(terminatedStatement);
+   */
   async sendCriticalStatement(statement) {
     const verbName = statement.verb.display.en;
     const objectName = statement.object?.definition?.name?.en || statement.object?.id || 'unknown';

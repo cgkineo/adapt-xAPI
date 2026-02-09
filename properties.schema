@@ -23,7 +23,25 @@
                   "title": "Is Enabled",
                   "inputType": "Checkbox",
                   "validators": [],
-                  "help": "If enabled, the course will be tracked by xAPI."
+                  "help": "If enabled, the course will be tracked by xAPI. Please keep this disabled at all times until you publish the course for delivery. Keeping this enabled in the Adapt Authoring Tool will record unwanted data to the LRS."
+                },
+                "_isRestoreEnabled": {
+                  "type": "boolean",
+                  "required": true,
+                  "default": false,
+                  "title": "Restore Progress from LRS",
+                  "inputType": "Checkbox",
+                  "validators": [],
+                  "help": "If enabled, the course will use xAPI data to restore course progress."
+                },
+                "_isDebugModeEnabled": {
+                  "type": "boolean",
+                  "required": true,
+                  "default": false,
+                  "title": "Developer Mode",
+                  "inputType": "Checkbox",
+                  "validators": [],
+                  "help": "If enabled, the course will continue to generate statements for testing but it will instead post the statement to the console instead of the LRS."
                 },
                 "_activityId": {
                   "type": "string",
@@ -32,7 +50,7 @@
                   "default": "https://example.com/unique_identifier",
                   "inputType": "Text",
                   "validators": [],
-                  "help": "Unique identifier for this xAPI activity. Used to populate the Activity id included in _tincan.xml_ and for use in the Statement and State API. The value will be overriden if changed on the hosting environment."
+                  "help": "Unique identifier for this xAPI activity. Used to populate the Activity id included in _tincan.xml_ and for use in the Statement and State API. The value will be overriden if changed on the hosting environment. Where data has changed significantly, a new Activity id is recommended."
                 },
                 "_revision": {
                   "type": "string",
@@ -41,7 +59,16 @@
                   "default": "",
                   "inputType": "Text",
                   "validators": [],
-                  "help": "This helps identify users running particular versions of the content, should functionality have been changed or issues found which require updates/voided statements for users running a specific revision. Where data has changed significantly, a new Activity id is recommended."
+                  "help": "If blank, this field auto-populates using the plugin’s `package.json` version number."
+                },
+                "_contentRelease": {
+                  "type": "string",
+                  "required": false,
+                  "title": "Revision",
+                  "default": "",
+                  "inputType": "Text",
+                  "validators": [],
+                  "help": "Identifies the version of the content. Increment this when releasing new builds."
                 },
                 "_tracking": {
                   "type": "object",
@@ -83,6 +110,60 @@
                       "inputType": "Checkbox",
                       "validators": [],
                       "help": "If enabled, the course will send a statement when the assessment have been completed. If using multiple assessments, the statement will be sent when all assessments have been completed."
+                    },
+                    "_focusedStates": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Focused States",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "Tracks when the course is visible or hidden in the browser."
+                    },
+                    "_navbar": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Navigational Bar",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "Tracks clicks on Adapt’s navigation bar."
+                    },
+                    "_video": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Media Analytics",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "Tracks interactions with adapt-contrib-media throughout the course. Requires adapt-mediaAnalytics to function."
+                    },
+                    "_visua11y": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Visua11y",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "Logs accessibility settings changes made via adapt-visua11y's settings."
+                    },
+                    "_connectionErrors": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Connection Errors",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "Logs LMS connection issues reported by adapt-contrib-spoor."
+                    },
+                    "_inactivityTimout": {
+                      "type": "boolean",
+                      "required": false,
+                      "default": false,
+                      "title": "Inactivity Timeout",
+                      "inputType": "Checkbox",
+                      "validators": [],
+                      "help": "Tracks inactivity warnings triggered by adapt-kineo-inactivityPopup."
                     }
                   }
                 },

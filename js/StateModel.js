@@ -1,7 +1,7 @@
-import Adapt from "core/js/adapt";
-import logging from "core/js/logging";
-import wait from "core/js/wait";
-import OfflineStorageHandler from "./OfflineStorageHandler";
+import Adapt from 'core/js/adapt';
+import logging from 'core/js/logging';
+import wait from 'core/js/wait';
+import OfflineStorageHandler from './OfflineStorageHandler';
 import * as Async from 'libraries/async.min';
 
 const COMPONENTS_KEY = 'components';
@@ -42,6 +42,7 @@ class StateModel extends Backbone.Model {
       ...this.defaults()._tracking,
       ...options._tracking
     };
+    this._debugModeEnabled = Adapt.config.get('_xapi')?._debugModeEnabled || false;
 
     this.setOfflineStorageModel();
     this.load();
@@ -92,39 +93,61 @@ class StateModel extends Backbone.Model {
   }
 
   showErrorNotification() {
-    Adapt.trigger('xapi:lrsError');
+    // Only show error notification if not in debug mode
+    // In development without LRS, we don't want to block the course
+    if (!this._debugModeEnabled) {
+      Adapt.trigger('xapi:lrsError');
+    }
   }
 
   load() {
     this._getStates((err, data) => {
       if (err) {
-        this.showErrorNotification();
-      } else {
-        const states = data;
+        if (this._debugModeEnabled) {
+          console.warn('[xAPI State] Failed to load states from LRS, continuing without restoration');
+        }
+        // Don't block course loading if LRS is unavailable
+        this._isLoaded = true;
+        Adapt.trigger('xapi:stateLoaded');
+        this.listenTo(Adapt, 'app:dataReady', this.onDataReady);
+        wait.end();
+        return;
+      }
 
-        Async.each(states, (id, callback) => {
-          this._fetchState(id, (err, data) => {
-            if (err) {
-              this.showErrorNotification();
-            } else {
-              // all data is now saved and retrieved as JSON, so no need for try/catch anymore
-              this.set(id, data);
-            }
+      wait.begin();
 
-            callback();
-          });
-        }, (err) => {
+      const states = data;
+
+      Async.each(states, (id, callback) => {
+        this._fetchState(id, (err, data) => {
           if (err) {
             this.showErrorNotification();
           } else {
-            this._isLoaded = true;
-
-            Adapt.trigger('xapi:stateLoaded');
-
-            this.listenTo(Adapt, 'app:dataReady', this.onDataReady);
+            // all data is now saved and retrieved as JSON, so no need for try/catch anymore
+            // Ensure arrays are properly initialized if data is corrupted
+            if (id === COMPONENTS_KEY && !Array.isArray(data)) {
+              data = [];
+            }
+            if (id === DURATIONS_KEY && !Array.isArray(data)) {
+              data = [];
+            }
+            this.set(id, data);
           }
+
+          callback();
         });
-      }
+      }, (err) => {
+        if (err) {
+          if (this._debugModeEnabled) {
+            console.warn('[xAPI State] Error loading individual states, continuing anyway');
+          }
+        }
+
+        this._isLoaded = true;
+        Adapt.trigger('xapi:stateLoaded');
+        this.listenTo(Adapt, 'app:dataReady', this.onDataReady);
+        wait.end();
+      });
     });
   }
 
@@ -201,9 +224,10 @@ class StateModel extends Backbone.Model {
 
       return response;
     }).catch((error) => {
+      if (error) logging.error('xAPI State save error:', error);
       this.showErrorNotification();
 
-      if (callback) callback();
+      if (callback) callback(error);
 
       if (!this._isRestored) wait.end();
     });
@@ -225,9 +249,10 @@ class StateModel extends Backbone.Model {
 
       return response;
     }).catch((error) => {
+      if (error) logging.error('xAPI State delete error:', error);
       this.showErrorNotification();
 
-      if (callback) callback();
+      if (callback) callback(error);
     });
   }
 
@@ -235,7 +260,6 @@ class StateModel extends Backbone.Model {
     const activityId = this.get('activityId');
     const agent = this.get('actor');
     const registration = this.get('registration');
-    const { endpoint } = this.xAPIWrapper.lrs;
 
     let url = this.xAPIWrapper.lrs.endpoint + 'activities/state?activityId=' + encodeURIComponent(activityId) + '&agent=' + encodeURIComponent(JSON.stringify(agent));
 
@@ -260,14 +284,14 @@ class StateModel extends Backbone.Model {
 
       return response.json();
     }).then((data) => {
-      if (data) logging.debug(data);
+      if (this._debugModeEnabled && data) logging.debug('xAPI State fetched:', data);
 
       if (callback) callback(null, data);
     }).catch((error) => {
-      console.error('Error fetching data:', error);
+      if (error) logging.error('xAPI State fetch error:', error);
       this.showErrorNotification();
 
-      if (callback) callback();
+      if (callback) callback(error);
     });
   }
 
@@ -296,7 +320,7 @@ class StateModel extends Backbone.Model {
       }, 1);
 
       queue.drain = () => {
-        logging.debug('State API queue cleared for ' + id);
+        if (this._debugModeEnabled) logging.debug('State API queue drained for ' + id);
       };
     }
 
@@ -314,31 +338,41 @@ class StateModel extends Backbone.Model {
   }
 
   _restoreDataForState(state, models) {
-    if (state.length > 0) {
-      state.forEach((data) => {
-        const model = models.filter((model) => {
-          return model.get('_id') === data._id;
-        })[0];
-
-        // account for models being removed in content without xAPI activityId or registration being changed
-        if (model) {
-          const restoreData = Object.keys(data).reduce((result, key) => {
-            if (key !== '_id') {
-              result[key] = data[key];
-            }
-            return result;
-          }, {});
-
-          model.set(restoreData);
-        }
-      });
+    // Ensure state is an array before attempting to restore data
+    if (!Array.isArray(state) || state.length === 0) {
+      return;
     }
+
+    state.forEach((data) => {
+      const model = models.filter((model) => {
+        return model.get('_id') === data._id;
+      })[0];
+
+      // account for models being removed in content without xAPI activityId or registration being changed
+      if (model) {
+        const restoreData = Object.keys(data).reduce((result, key) => {
+          if (key !== '_id') {
+            result[key] = data[key];
+          }
+          return result;
+        }, {});
+
+        model.set(restoreData);
+      }
+    });
   }
 
   _setComponentsData(model, data) {
     const stateId = COMPONENTS_KEY;
-    const state = this.get(stateId);
+    let state = this.get(stateId);
     const modelId = model.get('_id');
+
+    // Ensure state is always an array
+    if (!Array.isArray(state)) {
+      state = [];
+      this.set(stateId, state, { silent: true });
+    }
+
     const modelIndex = this._getStateModelIndexFor(state, modelId);
 
     // responses won't properly be restored until https://github.com/adaptlearning/adapt_framework/issues/2522 is resolved
@@ -358,8 +392,15 @@ class StateModel extends Backbone.Model {
 
   _setDurationsData(model) {
     const stateId = DURATIONS_KEY;
-    const state = this.get(stateId);
+    let state = this.get(stateId);
     const modelId = model.get('_id');
+
+    // Ensure state is always an array
+    if (!Array.isArray(state)) {
+      state = [];
+      this.set(stateId, state, { silent: true });
+    }
+
     const modelIndex = this._getStateModelIndexFor(state, modelId);
 
     const data = {
@@ -382,9 +423,9 @@ class StateModel extends Backbone.Model {
   }
 
   onDataReady() {
-    const config = Adapt.config.get('_xapi');
-    if (config?._isRestoreEnabled === false) return;
     wait.queue(() => {
+      const config = Adapt.config.get('_xapi');
+      if (config?._isRestoreEnabled === false) return;
       this.restore();
     }).bind(this);
   }

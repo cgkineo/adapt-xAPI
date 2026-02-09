@@ -40,7 +40,8 @@ class QuestionStatementModel extends AbstractStatementModel {
 
   getDescription(model) {
     const description = {};
-    description[this.get('lang')] = model.get('body');
+    const descriptionSelector = model.get('ariaQuestion') ? model.get('ariaQuestion') : model.get('body');
+    description[this.get('lang')] = descriptionSelector;
 
     return description;
   }
@@ -51,13 +52,13 @@ class QuestionStatementModel extends AbstractStatementModel {
     for (const key in interactionObject) {
       const interactionActivity = interactionObject[key];
 
-      interactionActivity.forEach(function(activity) {
-        if (activity.hasOwnProperty('description')) {
+      interactionActivity.forEach((activity) => {
+        if (Object.prototype.hasOwnProperty.call(activity, 'description')) {
           const description = {};
           description[this.get('lang')] = activity.description;
           activity.description = description;
         }
-      }, this);
+      });
     }
 
     return interactionObject;
@@ -123,7 +124,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   getAttempt(model) {
     return model.get('_attempts') - model.get('_attemptsLeft');
   }
-  
+
 }
 
 export default QuestionStatementModel;

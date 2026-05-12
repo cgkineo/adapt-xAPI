@@ -2,7 +2,7 @@ import AbstractStatementModel from './AbstractStatementModel';
 
 class PreferredStatementModel extends AbstractStatementModel {
 
-  initialize(attributes, options) {
+  initialize(attributes, options = {}) {
     this._name = options._name;
     this._state = options._state;
 

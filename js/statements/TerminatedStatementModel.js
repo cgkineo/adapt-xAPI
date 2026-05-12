@@ -2,6 +2,12 @@ import AbstractStatementModel from './AbstractStatementModel';
 
 class TerminatedStatementModel extends AbstractStatementModel {
 
+  defaults() {
+    return {
+      _sessionCounter: null
+    };
+  }
+
   initialize(attributes, options) {
     this._sessionCounter = options._sessionCounter;
 

@@ -45,9 +45,9 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 >**\_questionInteractions** (boolean): If enabled, the course will send statements recording the user's question responses. The default value is `true`.
 
->**\_assessmentsCompletion** (boolean): If enabled, the course will send a statement for each assessment that is completed. Recommended only for courses containing multiple assessments. Requires [adapt-contrib-assessment](https://github.com/adaptlearning/adapt-contrib-assessment). The default value is `false`.
+>**\_assessmentsCompletion** (boolean): If enabled, the course will send a statement for each assessment that is completed. Recommended only for courses containing multiple assessments. The default value is `false`.
 
->**\_assessmentCompletion** (boolean): If enabled, the course will send a statement when all assessments have been completed. Requires [adapt-contrib-assessment](https://github.com/adaptlearning/adapt-contrib-assessment). The default value is `true`.
+>**\_assessmentCompletion** (boolean): If enabled, the course will send a statement when all assessments have been completed. The default value is `true`.
 
 >**\_statementFailures** (boolean): If enabled, the course will display error notifications to users when xAPI statements fail to send to the LRS. The default value is `false`.
 
@@ -58,7 +58,6 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 >**\_glossary** (boolean): If enabled, the course will send "viewed" statements when glossary terms are selected. Each statement includes the term and its definition as context extensions. Requires [adapt-contrib-glossary](https://github.com/adaptlearning/adapt-contrib-glossary). The default value is `false`.
 
 >**\_connectionErrors** (boolean): If enabled, the course will send "received" statements when LMS (not LRS) connection errors occur. These statements report issues with the Learning Management System and are sent to the LRS for monitoring purposes. Requires [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) for LMS connectivity tracking. The default value is `false`.
-
 **\_errors** (object): Contains error notification configurations for different failure scenarios.
 
 >**\_launch** (object): Configuration for errors associated with a failed launch when connecting to the LRS.
@@ -178,6 +177,7 @@ The granular detail of what is included within each statement and how to analyze
 ## Limitations and Known Issues
 
 - Does not support multiple endpoints for storing data to more than one LRS.
+- Does not currently work alongside [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) due to a conflict with `Adapt.offlineStorage`.
 
 ----------------------------
 <a href="https://www.kineo.com/"><img src="https://github.com/cgkineo/assets/blob/master/logos/kineo-logo.png" alt="Kineo" align="right"></a><br>

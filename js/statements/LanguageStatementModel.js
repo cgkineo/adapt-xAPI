@@ -1,7 +1,6 @@
 import AbstractStatementModel from './AbstractStatementModel';
-import PreferredStatementModel from './PreferredStatementModel';
 
-class LanguageStatementModel extends PreferredStatementModel {
+class LanguageStatementModel extends AbstractStatementModel {
 
   getData(model, lang) {
     const statement = super.getData.apply(this, arguments);

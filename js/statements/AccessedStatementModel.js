@@ -33,7 +33,7 @@ class AccessedStatementModel extends AbstractStatementModel {
   }
 
   getContentObjectsContextActivities(model) {
-    return 'course';
+    return [];
   }
 
   getContextExtensions(model) {

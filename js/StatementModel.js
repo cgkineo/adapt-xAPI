@@ -17,6 +17,7 @@ import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStateme
 import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
+import ViewedStatementModel from './statements/ViewedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -291,7 +292,7 @@ class StatementModel extends Backbone.Model {
 
   sendGlossaryViewed(model) {
     const config = this.attributes;
-    const statementModel = new AccessedStatementModel(config);
+    const statementModel = new ViewedStatementModel(config);
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -636,14 +637,7 @@ class StatementModel extends Backbone.Model {
     this.sendResourceAccessed(model);
   }
 
-  onGlossaryClicked(data) {
-    const model = new Backbone.Model();
-
-    model.set({
-      term: data.attributes.term,
-      description: data.attributes.description
-    });
-
+  onGlossaryClicked(model) {
     this.sendGlossaryViewed(model);
   }
 

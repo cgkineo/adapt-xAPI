@@ -177,7 +177,7 @@ The granular detail of what is included within each statement and how to analyze
 ## Limitations and Known Issues
 
 - Does not support multiple endpoints for storing data to more than one LRS.
-- Does not currently work alongside [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) due to a conflict with `Adapt.offlineStorage`.
+- Does not currently work alongside [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) for full state tracking due to a conflict with `Adapt.offlineStorage`. Note: the `_connectionErrors` feature can still receive LMS error events from spoor even in this configuration.
 
 ----------------------------
 <a href="https://www.kineo.com/"><img src="https://github.com/cgkineo/assets/blob/master/logos/kineo-logo.png" alt="Kineo" align="right"></a><br>

@@ -42,6 +42,7 @@ class StateModel extends Backbone.Model {
       ...this.defaults()._tracking,
       ...options._tracking
     };
+    this._isRestoreEnabled = options._isRestoreEnabled ?? true;
     this._debugModeEnabled = Adapt.config.get('_xapi')?._debugModeEnabled || false;
 
     this.setOfflineStorageModel();
@@ -130,6 +131,10 @@ class StateModel extends Backbone.Model {
             }
             if (id === DURATIONS_KEY && !Array.isArray(data)) {
               data = [];
+            }
+            if (id === 'lang' && !this._isRestoreEnabled) {
+              callback();
+              return;
             }
             this.set(id, data);
           }

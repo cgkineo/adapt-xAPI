@@ -1,3 +1,4 @@
+import logging from 'core/js/logging';
 import AbstractStatementModel from './AbstractStatementModel';
 
 class AssessmentStatementModel extends AbstractStatementModel {
@@ -17,8 +18,11 @@ class AssessmentStatementModel extends AbstractStatementModel {
   }
 
   getVerb(state) {
-    // return if using Backbone.Model from AbstractStatementModel
-    if (state.attributes) return;
+    // state is a Backbone.Model when called from AbstractStatementModel — assessment state not yet available
+    if (state?.attributes) {
+      logging.warn('[xAPI] AssessmentStatementModel.getVerb called without valid assessment state');
+      return;
+    }
 
     const isPass = state.isPass;
     const verbType = (isPass) ? 'passed' : 'failed';

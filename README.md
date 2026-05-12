@@ -55,7 +55,7 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 >**\_resources** (boolean): If enabled, the course will send "accessed" statements when resources are clicked. Requires [adapt-contrib-resources](https://github.com/adaptlearning/adapt-contrib-resources). The default value is `false`.
 
->**\_glossary** (boolean): If enabled, the course will send "accessed" statements when glossary terms are selected. Requires [adapt-contrib-glossary](https://github.com/adaptlearning/adapt-contrib-glossary). The default value is `false`.
+>**\_glossary** (boolean): If enabled, the course will send "viewed" statements when glossary terms are selected. Each statement includes the term and its definition as context extensions. Requires [adapt-contrib-glossary](https://github.com/adaptlearning/adapt-contrib-glossary). The default value is `false`.
 
 >**\_connectionErrors** (boolean): If enabled, the course will send "received" statements when LMS (not LRS) connection errors occur. These statements report issues with the Learning Management System and are sent to the LRS for monitoring purposes. Requires [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) for LMS connectivity tracking. The default value is `false`.
 

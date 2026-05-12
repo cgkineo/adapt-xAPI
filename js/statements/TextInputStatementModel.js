@@ -22,7 +22,7 @@ class TextInputStatementModel extends QuestionStatementModel {
 
       // Exclude correctResponsesPattern if using specific answers when there is more than one input?
       // 'Where the criteria for a question are complex and correct responses cannot be exhaustively listed, Learning Record Providers are discouraged from using the "correctResponsesPattern" property.'
-      if (items > 1) return null;
+      if (items.length > 1) return null;
 
       correctAnswers = items.map(item => item._answers);
     }

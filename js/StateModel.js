@@ -204,61 +204,57 @@ class StateModel extends Backbone.Model {
     }
   }
 
-  save(id, callback) {
+  async save(id, callback) {
     const state = this.get(id);
     const data = JSON.stringify(state);
 
     // ensure any data being set is completed before restoring following languageChange
     if (!this._isRestored) wait.begin();
 
-    fetch(this._getStateURL(id), {
-      keepalive: Adapt.terminate || false,
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: this.xAPIWrapper.lrs.auth,
-        'X-Experience-API-Version': this.xAPIWrapper.xapiVersion
-      },
-      body: data
-    }).then((response) => {
-      if (!response.ok) throw Error(response.statusText);
+    try {
+      const response = await fetch(this._getStateURL(id), {
+        keepalive: Adapt.terminate || false,
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: this.xAPIWrapper.lrs.auth,
+          'X-Experience-API-Version': this.xAPIWrapper.xapiVersion
+        },
+        body: data
+      });
+
+      if (!response.ok) throw new Error(response.statusText);
 
       if (callback) callback();
-
-      if (!this._isRestored) wait.end();
-
-      return response;
-    }).catch((error) => {
-      if (error) logging.error('xAPI State save error:', error);
+    } catch (error) {
+      logging.error('xAPI State save error:', error);
       this.showErrorNotification();
-
       if (callback) callback(error);
-
+    } finally {
       if (!this._isRestored) wait.end();
-    });
+    }
   }
 
-  delete(id, callback) {
+  async delete(id, callback) {
     this.unset(id, { silent: true });
 
-    fetch(this._getStateURL(id), {
-      method: 'DELETE',
-      headers: {
-        Authorization: this.xAPIWrapper.lrs.auth,
-        'X-Experience-API-Version': this.xAPIWrapper.xapiVersion
-      }
-    }).then((response) => {
-      if (!response.ok) throw Error(response.statusText);
+    try {
+      const response = await fetch(this._getStateURL(id), {
+        method: 'DELETE',
+        headers: {
+          Authorization: this.xAPIWrapper.lrs.auth,
+          'X-Experience-API-Version': this.xAPIWrapper.xapiVersion
+        }
+      });
+
+      if (!response.ok) throw new Error(response.statusText);
 
       if (callback) callback();
-
-      return response;
-    }).catch((error) => {
-      if (error) logging.error('xAPI State delete error:', error);
+    } catch (error) {
+      logging.error('xAPI State delete error:', error);
       this.showErrorNotification();
-
       if (callback) callback(error);
-    });
+    }
   }
 
   _getStateURL(stateId) {
@@ -429,10 +425,9 @@ class StateModel extends Backbone.Model {
 
   onDataReady() {
     wait.queue(() => {
-      const config = Adapt.config.get('_xapi');
-      if (config?._isRestoreEnabled === false) return;
+      if (!this._isRestoreEnabled) return;
       this.restore();
-    }).bind(this);
+    });
   }
 
   onAdaptInitialize() {

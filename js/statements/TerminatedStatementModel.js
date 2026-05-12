@@ -33,7 +33,7 @@ class TerminatedStatementModel extends AbstractStatementModel {
   getContextExtensions(model) {
     const extensions = AbstractStatementModel.prototype.getContextExtensions.apply(this, arguments);
 
-    _.extend(extensions, {
+    Object.assign(extensions, {
       'http://id.tincanapi.com/extension/measurement': {
         'Session Statements': this._sessionCounter + 1
       }

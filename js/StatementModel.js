@@ -54,8 +54,6 @@ class StatementModel extends Backbone.Model {
     this.xAPIWrapper = wrapper;
     this._tracking = { ...this.defaults()._tracking, ..._tracking };
 
-    Object.assign(this._tracking, options._tracking);
-
     // Store debug mode flag from xAPI config root level
     const xapiConfig = Adapt.config.get('_xapi');
     this._debugModeEnabled = xapiConfig?._debugModeEnabled || false;
@@ -216,27 +214,19 @@ class StatementModel extends Backbone.Model {
   sendQuestionAnswered(model) {
     const { attributes } = this;
     const questionType = model.get('_component');
-    let StatementClass;
 
-    // better solution than this factory type pattern?
-    switch (questionType) {
-      case 'mcq':
-      case 'gmcq':
-        StatementClass = McqStatementModel;
-        break;
-      case 'slider':
-        StatementClass = SliderStatementModel;
-        break;
-      case 'confidenceSlider':
-        StatementClass = ConfidenceSliderStatementModel;
-        break;
-      case 'textinput':
-        StatementClass = TextInputStatementModel;
-        break;
-      case 'matching':
-        StatementClass = MatchingStatementModel;
-        break;
-    }
+    const QUESTION_STATEMENT_MODELS = {
+      mcq: McqStatementModel,
+      gmcq: McqStatementModel,
+      slider: SliderStatementModel,
+      confidenceSlider: ConfidenceSliderStatementModel,
+      textinput: TextInputStatementModel,
+      matching: MatchingStatementModel
+    };
+
+    const StatementClass = QUESTION_STATEMENT_MODELS[questionType];
+
+    if (!StatementClass) return;
 
     const statementModel = new StatementClass(attributes);
     const statement = statementModel.getData(model);
@@ -302,7 +292,7 @@ class StatementModel extends Backbone.Model {
    * @todo: Add Fetch API into xAPIWrapper - https://github.com/adlnet/xAPIWrapper/issues/166
    */
   async send(statement) {
-    const verbName = statement.verb.display.en;
+    const verbName = statement.verb.display[this.get('recipeLang')] ?? statement.verb.display[Object.keys(statement.verb.display)[0]];
     const objectName = statement.object?.definition?.name?.en || statement.object?.id || 'unknown';
 
     const maxRetries = 3;

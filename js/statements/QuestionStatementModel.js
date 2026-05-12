@@ -49,7 +49,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   getInteractionObject(model) {
     const interactionObject = model.getInteractionObject();
 
-    for (const key in interactionObject) {
+    for (const key of Object.keys(interactionObject)) {
       const interactionActivity = interactionObject[key];
 
       interactionActivity.forEach((activity) => {
@@ -87,7 +87,7 @@ class QuestionStatementModel extends AbstractStatementModel {
   }
 
   getContextExtensions(model) {
-    const extensions = super.getObjectExtensions.apply(this, arguments);
+    const extensions = super.getContextExtensions.apply(this, arguments);
 
     Object.assign(extensions, {
       'http://id.tincanapi.com/extension/attempt-id': this.getAttempt(model)

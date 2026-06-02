@@ -247,10 +247,9 @@ Tracks when the inactivity timeout popup is displayed to users.
 - Does not currently work alongside [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) due to a conflict with `Adapt.offlineStorage`.
 
 ----------------------------
-<a href="https://www.kineo.com/"><img src="https://github.com/cgkineo/assets/blob/master/logos/kineo-logo.png" alt="Kineo" align="right"></a><br>
-**Version number:**  5.0.0<br>
+
 **Framework versions:**  5.5+<br>
-**Author / maintainer:** Kineo<br>
+**Author / maintainer:** Mindtools Kineo<br>
 **Accessibility support:** WAI AA<br>
 **RTL support:** Yes<br>
-**Cross-platform coverage:** Chrome, Edge, Firefox, Safari
+**Cross-platform coverage:** Chrome, Chrome for Android, Firefox (ESR + latest version), Edge, Safari for macOS/iOS/iPadOS, Opera<br>

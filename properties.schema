@@ -105,7 +105,7 @@
                     "_assessmentCompletion": {
                       "type": "boolean",
                       "required": false,
-                      "default": true,
+                      "default": false,
                       "title": "Record assessment completion",
                       "inputType": "Checkbox",
                       "validators": [],

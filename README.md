@@ -51,6 +51,13 @@ The attributes listed below are used in _config.json_ to configure **adapt-xAPI*
 
 >**\_statementFailures** (boolean): If enabled, the course will display error notifications to users when xAPI statements fail to send to the LRS. The default value is `false`.
 
+>**\_navbar** (boolean): If enabled, the course will send "interacted" statements when navigation drawer, help popup, or page level progress are opened. Can work in conjunction with [adapt-contrib-pageLevelProgress](https://github.com/adaptlearning/adapt-contrib-pageLevelProgress) to track drawer interactions. The default value is `false`.
+
+>**\_resources** (boolean): If enabled, the course will send "accessed" statements when resources are clicked. Requires [adapt-contrib-resources](https://github.com/adaptlearning/adapt-contrib-resources). The default value is `false`.
+
+>**\_glossary** (boolean): If enabled, the course will send "viewed" statements when glossary terms are selected. Each statement includes the term and its definition as context extensions. Requires [adapt-contrib-glossary](https://github.com/adaptlearning/adapt-contrib-glossary). The default value is `false`.
+
+>**\_connectionErrors** (boolean): If enabled, the course will send "received" statements when LMS (not LRS) connection errors occur. These statements report issues with the Learning Management System and are sent to the LRS for monitoring purposes. Requires [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) for LMS connectivity tracking. The default value is `false`.
 **\_errors** (object): Contains error notification configurations for different failure scenarios.
 
 >**\_launch** (object): Configuration for errors associated with a failed launch when connecting to the LRS.
@@ -148,6 +155,8 @@ The granular detail of what is included within each statement and how to analyze
 | `http://adlnet.gov/expapi/activities/interaction` | Defines a component model. |
 | `http://adlnet.gov/expapi/activities/cmi.interaction` | Defines a question component model. |
 | `http://adlnet.gov/expapi/activities/assessment` | Defines an assessment article model and/or the overall assessment. |
+| `http://adlnet.gov/expapi/activities/profile` | Defines a user preference or profile setting. |
+| `http://id.tincanapi.com/activitytype/resource` | Defines an external resource or downloadable file. |
 
 ### Verbs
 
@@ -161,11 +170,14 @@ The granular detail of what is included within each statement and how to analyze
 | answered | `http://adlnet.gov/expapi/verbs/answered` | Sent each time a question component has been answered. |
 | passed | `http://adlnet.gov/expapi/verbs/passed` | Sent should a user achieve the required passmark for an assessment. |
 | failed | `http://adlnet.gov/expapi/verbs/failed` | Sent should a user score below the required passmark for an assessment. |
+| interacted | `http://adlnet.gov/expapi/verbs/interacted` | Sent when users interact with navigation elements (drawer, help popup, page level progress). |
+| accessed | `https://activitystrea.ms/schema/1.0/access` | Sent when users access resources or glossary terms. |
+| received | `http://activitystrea.ms/schema/1.0/receive` | Sent when LMS (not LRS) connection errors occur (initialization error, data error, connection error, termination error). |
 
 ## Limitations and Known Issues
 
 - Does not support multiple endpoints for storing data to more than one LRS.
-- Does not currently work alongside [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) due to a conflict with `Adapt.offlineStorage`.
+- Does not currently work alongside [adapt-contrib-spoor](https://github.com/adaptlearning/adapt-contrib-spoor) for full state tracking due to a conflict with `Adapt.offlineStorage`. Note: the `_connectionErrors` feature can still receive LMS error events from spoor even in this configuration.
 
 ----------------------------
 <a href="https://www.kineo.com/"><img src="https://github.com/cgkineo/assets/blob/master/logos/kineo-logo.png" alt="Kineo" align="right"></a><br>

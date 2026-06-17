@@ -7,12 +7,17 @@ import TerminatedStatementModel from './statements/TerminatedStatementModel';
 import LanguageStatementModel from './statements/LanguageStatementModel';
 import CompletedStatementModel from './statements/CompletedStatementModel';
 import ExperiencedStatementModel from './statements/ExperiencedStatementModel';
+import PreferredStatementModel from './statements/PreferredStatementModel';
+import InteractedStatementModel from './statements/InteractedStatementModel';
+import ReceivedStatementModel from './statements/ReceivedStatementModel';
+import AccessedStatementModel from './statements/AccessedStatementModel';
 import McqStatementModel from './statements/McqStatementModel';
 import SliderStatementModel from './statements/SliderStatementModel';
 import ConfidenceSliderStatementModel from './statements/ConfidenceSliderStatementModel';
 import TextInputStatementModel from './statements/TextInputStatementModel';
 import MatchingStatementModel from './statements/MatchingStatementModel';
 import AssessmentStatementModel from './statements/AssessmentStatementModel';
+import ViewedStatementModel from './statements/ViewedStatementModel';
 
 class StatementModel extends Backbone.Model {
 
@@ -22,7 +27,12 @@ class StatementModel extends Backbone.Model {
         _questionInteractions: true,
         _assessmentsCompletion: false,
         _assessmentCompletion: true,
-        _statementFailures: false
+        _statementFailures: false,
+        _navbar: true,
+        _visua11y: true,
+        _resources: true,
+        _glossary: true,
+        _connectionErrors: true
       },
       xAPIWrapper: null,
       _isInitialized: false,
@@ -43,8 +53,6 @@ class StatementModel extends Backbone.Model {
     const { wrapper, _tracking } = options;
     this.xAPIWrapper = wrapper;
     this._tracking = { ...this.defaults()._tracking, ..._tracking };
-
-    Object.assign(this._tracking, options._tracking);
 
     // Store debug mode flag from xAPI config root level
     const xapiConfig = Adapt.config.get('_xapi');
@@ -88,12 +96,31 @@ class StatementModel extends Backbone.Model {
       });
     }
 
-    if (this._tracking._trackingErrors) {
+    if (this._tracking._connectionErrors) {
       this.listenTo(Adapt, {
         'tracking:initializeError': this.onInitializeError,
         'tracking:dataError': this.onDataError,
         'tracking:connectionError': this.onConnectionError,
         'tracking:terminationError': this.onTerminationError
+      });
+    }
+
+    if (this._tracking._navbar) {
+      this.listenTo(Adapt, {
+        'navigation:toggleDrawer': this.onDrawerOpened,
+        'pageLevelProgress:toggleDrawer': this.onPLPDrawerOpened
+      });
+    }
+
+    if (this._tracking._resources) {
+      this.listenTo(Adapt, {
+        'resources:itemClicked': this.onResourceClicked
+      });
+    }
+
+    if (this._tracking._glossary) {
+      this.listenTo(Adapt, {
+        'glossary:termSelected': this.onGlossaryClicked
       });
     }
   }
@@ -122,6 +149,11 @@ class StatementModel extends Backbone.Model {
     Adapt.trigger('xapi:statementFailure');
   }
 
+  createGlobalVariables() {
+    this._sessionCounter = 0;
+    this._assessmentCounter = 0;
+  }
+
   sendInitialized() {
     const { attributes } = this;
     const statementModel = new InitializedStatementModel(attributes);
@@ -136,7 +168,9 @@ class StatementModel extends Backbone.Model {
     this.setModelDuration(model);
 
     const { attributes } = this;
-    const statementModel = new TerminatedStatementModel(attributes);
+    const statementModel = new TerminatedStatementModel(attributes, {
+      _sessionCounter: this._sessionCounter
+    });
     const statement = statementModel.getData(model);
 
     this.sendCriticalStatement(statement);
@@ -155,7 +189,10 @@ class StatementModel extends Backbone.Model {
     if (modelType === 'course' || modelType === 'page') this.setModelDuration(model);
 
     const { attributes } = this;
-    const statementModel = new CompletedStatementModel(attributes, { _type: type });
+    const statementModel = new CompletedStatementModel(attributes, {
+      _type: type,
+      _sessionCounter: this._sessionCounter
+    });
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -177,29 +214,21 @@ class StatementModel extends Backbone.Model {
   sendQuestionAnswered(model) {
     const { attributes } = this;
     const questionType = model.get('_component');
-    let statementClass;
 
-    // better solution than this factory type pattern?
-    switch (questionType) {
-      case 'mcq':
-      case 'gmcq':
-        statementClass = McqStatementModel;
-        break;
-      case 'slider':
-        statementClass = SliderStatementModel;
-        break;
-      case 'confidenceSlider':
-        statementClass = ConfidenceSliderStatementModel;
-        break;
-      case 'textinput':
-        statementClass = TextInputStatementModel;
-        break;
-      case 'matching':
-        statementClass = MatchingStatementModel;
-        break;
-    }
+    const QUESTION_STATEMENT_MODELS = {
+      mcq: McqStatementModel,
+      gmcq: McqStatementModel,
+      slider: SliderStatementModel,
+      confidenceSlider: ConfidenceSliderStatementModel,
+      textinput: TextInputStatementModel,
+      matching: MatchingStatementModel
+    };
 
-    const statementModel = new statementClass(attributes);
+    const StatementClass = QUESTION_STATEMENT_MODELS[questionType];
+
+    if (!StatementClass) return;
+
+    const statementModel = new StatementClass(attributes);
     const statement = statementModel.getData(model);
 
     this.send(statement);
@@ -207,8 +236,54 @@ class StatementModel extends Backbone.Model {
 
   sendAssessmentCompleted(model, state) {
     const { attributes } = this;
-    const statementModel = new AssessmentStatementModel(attributes);
+    const statementModel = new AssessmentStatementModel(attributes, {
+      _assessmentCounter: this._assessmentCounter
+    });
     const statement = statementModel.getData(model, state);
+
+    this.send(statement);
+  }
+
+  sendInteracted(type) {
+    const model = Adapt.course;
+
+    const config = this.attributes;
+    const statementModel = new InteractedStatementModel(config, { _type: type });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendReceived(type) {
+    const model = Adapt.course;
+
+    const config = this.attributes;
+    const statementModel = new ReceivedStatementModel(config, { _type: type });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendPreferred(model, name, state) {
+    const config = this.attributes;
+    const statementModel = new PreferredStatementModel(config, { _name: name, _state: state });
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendResourceAccessed(model) {
+    const config = this.attributes;
+    const statementModel = new AccessedStatementModel(config);
+    const statement = statementModel.getData(model);
+
+    this.send(statement);
+  }
+
+  sendGlossaryViewed(model) {
+    const config = this.attributes;
+    const statementModel = new ViewedStatementModel(config);
+    const statement = statementModel.getData(model);
 
     this.send(statement);
   }
@@ -230,7 +305,7 @@ class StatementModel extends Backbone.Model {
    * }
    */
   async send(statement) {
-    const verbName = statement.verb.display.en;
+    const verbName = statement.verb.display[this.get('recipeLang')] ?? statement.verb.display[Object.keys(statement.verb.display)[0]];
     const objectName = statement.object?.definition?.name?.en || statement.object?.id || 'unknown';
 
     const maxRetries = 3;
@@ -266,6 +341,7 @@ class StatementModel extends Backbone.Model {
         if (this._debugModeEnabled) {
           Utils.slogf(`✓ ${verbName} | Object: ${objectName}`, 'success');
         }
+        this._sessionCounter++;
         return true;
 
       } catch (error) {
@@ -324,6 +400,7 @@ class StatementModel extends Backbone.Model {
       if (this._debugModeEnabled) {
         Utils.slogf(`✓ ${verbName} (critical) | Object: ${objectName}`, 'success');
       }
+      this._sessionCounter++;
       return true;
 
     } catch (error) {
@@ -454,6 +531,7 @@ class StatementModel extends Backbone.Model {
   onAdaptInitialize() {
     if (!this._isInitialized) {
       this.setModelSessionStartTime(Adapt.course);
+      this.createGlobalVariables();
 
       this.sendInitialized();
 
@@ -550,6 +628,31 @@ class StatementModel extends Backbone.Model {
 
   onTerminationError() {
     this.sendReceived('Termination Error');
+  }
+
+  onDrawerOpened() {
+    this.sendInteracted('drawer');
+  }
+
+  onPLPDrawerOpened() {
+    this.sendInteracted('pageLevelProgress');
+  }
+
+  onResourceClicked(data, location) {
+    const model = new Backbone.Model();
+    model.set({
+      type: data._type,
+      title: data.title,
+      description: data.description,
+      url: data.filename ? data.filename : data._link,
+      location
+    });
+
+    this.sendResourceAccessed(model);
+  }
+
+  onGlossaryClicked(model) {
+    this.sendGlossaryViewed(model);
   }
 
   onVisibilityChange() {

@@ -83,7 +83,7 @@ class LaunchModel extends Backbone.Model {
 
   triggerLaunchInitialized() {
     wait.end();
-    setTimeout(function() {
+    setTimeout(() => {
       Adapt.trigger('xapi:launchInitialized');
     }, 0);
   }
@@ -95,7 +95,8 @@ class LaunchModel extends Backbone.Model {
       404 = launch removed
     */
     if (err) {
-      if (performance.navigation.type === 1) {
+      const [navEntry] = performance.getEntriesByType('navigation');
+      if (navEntry?.type === 'reload') {
         this.onReload();
         return;
       }

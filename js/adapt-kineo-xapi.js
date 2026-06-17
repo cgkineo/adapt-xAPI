@@ -52,7 +52,8 @@ class xAPI extends Backbone.Controller {
 
     this.stateModel = new StateModel(config, {
       wrapper: this.launchModel.getWrapper(),
-      _tracking: this._config._tracking
+      _tracking: this._config._tracking,
+      _isRestoreEnabled: this._config._isRestoreEnabled ?? true
     });
   }
 

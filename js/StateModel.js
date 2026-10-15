@@ -434,7 +434,11 @@ class StateModel extends Backbone.Model {
   onDataReady() {
     wait.queue(() => {
       const config = Adapt.config.get('_xapi');
-      if (!config?._isRestoreEnabled) return;
+      if (!config?._isRestoreEnabled) {
+        // nothing to restore, so stop state saves from holding Adapt's wait queue
+        this._isRestored = true;
+        return;
+      }
       this.restore();
     }).bind(this);
   }
